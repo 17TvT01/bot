@@ -1,0 +1,10 @@
+[
+  {
+    "id": 1,
+    "description": "task học Python",
+    "priority": "medium",
+    "completed": false,
+    "created_at": "2025-08-24T15:04:44.338375",
+    "completed_at": null
+  }
+]
