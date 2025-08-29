@@ -1,0 +1,41 @@
+                if re.search(pattern, text, re.IGNORECASE):
+                    pattern_matches += 1
+                    # Scoring system cải tiến
+                    base_score = 0.4
+                    match_bonus = pattern_matches * 0.15
+                    score = min(base_score + match_bonus, 1.0)
+                    max_score = max(max_score, score)
+            
+            if max_score > 0:
+                intent_scores[intent] = max_score
+        
+        # Xử lý đặc biệt cho các intent phức tạp
+        if any(word in text for word in ["xóa", "hủy", "delete", "remove"]) and any(word in text for word in ["nhắc", "ghi chú", "lịch", "reminder"]):
+            intent_scores["delete_reminder"] = 0.95
+        
+        if any(word in text for word in ["xem", "hiển thị", "list", "show"]) and any(word in text for word in ["nhắc", "ghi chú", "lịch", "reminder"]):
+            intent_scores["list_reminder"] = 0.95
+            
+        # Fallback mechanism
+        if not intent_scores:
+            # Phân tích dựa trên cấu trúc câu
+            if "?" in text or text.endswith("không"):
+                intent_scores["question"] = 0.6
+            elif any(word in text for word in ["làm", "tạo", "giúp", "mở"]):
+                intent_scores["command"] = 0.6
+            else:
+                intent_scores["unknown"] = 0.8
+            
+        return intent_scores
+    
+    def extract_enhanced_entities(self, text: str) -> Dict[str, List[str]]:
+        """Trích xuất các thực thể với post-processing"""
+        entities = {}
+        
+        for entity_type, patterns in self.entity_patterns.items():
+            matches = []
+            for pattern in patterns:
+                for match in re.finditer(pattern, text, re.IGNORECASE):
+                    entity_text = match.group(0).strip()
+                    # Post-processing: filter out short or invalid entities
+                    if len(entity_text) > 1 and entity_text not in ["của", "trong", "với", "và", "là"]:

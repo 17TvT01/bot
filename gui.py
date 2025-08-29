@@ -323,3 +323,4 @@ def start_gui():
     root.bind('<Map>', on_window_appear)
     
     root.mainloop()
+

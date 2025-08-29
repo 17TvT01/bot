@@ -81,3 +81,4 @@ def test_search_functionality():
         print("-" * 30)
 
 if __name__ == "__main__":
+    test_search_functionality()

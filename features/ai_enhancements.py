@@ -207,45 +207,93 @@ class AIAssistant:
             return []
     
     def get_smart_suggestions(self) -> List[str]:
-        """Get smart suggestions based on current context."""
-        # Kiểm tra xem dữ liệu đã được tải đầy đủ chưa
+        """Context-aware suggestions (time, usage, reminders), scored and de-duplicated."""
         if not self._data_loaded:
-            # Trả về các gợi ý mặc định nếu dữ liệu chưa được tải
-            return ["Kiểm tra thời tiết", "Sử dụng máy tính", "Kiểm tra thông tin hệ thống"]
-            
+            return ["xem thoi tiet", "mo may tinh", "xem thong tin he thong"]
+
         try:
-            suggestions = []
-            current_time = datetime.datetime.now()
-            current_hour = current_time.hour
-            
-            # Time-based suggestions
-            if 6 <= current_hour < 9:
-                suggestions.append("Kiểm tra lịch trình ngày hôm nay")
-            elif 11 <= current_hour < 13:
-                suggestions.append("Đặt báo thức cho buổi chiều")
-            elif 16 <= current_hour < 18:
-                suggestions.append("Xem thời tiết ngày mai")
-            
-            # Based on recent usage patterns
-            recent_commands = [cmd['command'] for cmd in self.user_data.get('command_history', [])[-10:] if cmd['success']]
-            
-            # Weather-related suggestions
-            if any("thời tiết" in cmd.lower() for cmd in recent_commands):
-                suggestions.append("Theo dõi thời tiết hàng ngày")
-            
-            # Calculator-related suggestions
-            if any(word in " ".join(recent_commands).lower() for word in ["tính", "cộng", "trừ", "nhân", "chia"]):
-                suggestions.append("Sử dụng máy tính để tính toán nhanh")
-            
-            # System info suggestions
-            if any(word in " ".join(recent_commands).lower() for word in ["hệ thống", "thông tin", "máy tính"]):
-                suggestions.append("Kiểm tra thông tin hệ thống")
-            
-            return suggestions[:3]  # Limit to 3 most relevant suggestions
+            now = datetime.datetime.now()
+            hour = now.hour
+            recent = [c['command'] for c in self.user_data.get('command_history', [])[-10:] if c.get('success')]
+            joined_recent = " ".join(recent).lower()
+
+            candidates: List[Tuple[str, float]] = []
+
+            def add(text: str, score: float):
+                if text:
+                    candidates.append((text, score))
+
+            # Time-based
+            if 6 <= hour < 9:
+                add("xem lich hom nay", 0.7)
+            if 11 <= hour < 13:
+                add("dat bao thuc luc 14h", 0.6)
+            if 16 <= hour < 20:
+                add("xem thoi tiet ngay mai", 0.6)
+
+            # Usage-based
+            if any(w in joined_recent for w in ["thoi tiet", "weather"]):
+                add("theo doi thoi tiet hang ngay", 0.65)
+            if any(w in joined_recent for w in ["tinh", "cong", "tru", "nhan", "chia", "calculator"]):
+                add("mo may tinh de tinh nhanh", 0.55)
+            if any(w in joined_recent for w in ["he thong", "system", "cpu", "ram"]):
+                add("xem thong tin he thong", 0.5)
+
+            # Reminder-aware
+            try:
+                from features.reminder import get_reminder_manager
+                rm = get_reminder_manager()
+                upcoming = []
+                for r in getattr(rm, 'reminders', []) or []:
+                    t = r.get('time')
+                    if hasattr(t, 'strftime'):
+                        dt = t
+                    else:
+                        try:
+                            dt = datetime.datetime.fromisoformat(str(t))
+                        except Exception:
+                            dt = None
+                    if dt and dt >= now and (dt - now).total_seconds() <= 60*60*8:
+                        upcoming.append((r, dt))
+                if upcoming:
+                    upcoming.sort(key=lambda x: x[1])
+                    r, dt = upcoming[0]
+                    hhmm = dt.strftime("%Hh%M").replace("h00", "h")
+                    add("xem danh sach su kien hom nay", 0.8)
+                    add(f"nhac toi '{r.get('title','cuoc hop')}' luc {hhmm}", 0.75)
+            except Exception:
+                pass
+
+            # Promote frequent commands
+            usage = self.user_data.get('usage_patterns', {}) or {}
+            total = sum(usage.values()) or 1
+            for cmd, cnt in usage.items():
+                frac = cnt / total
+                if frac > 0.1:
+                    add(cmd, 0.3 + min(0.5, frac))
+
+            # Adjust by success rate
+            success_rate = self.user_data.get('success_rate', {}) or {}
+            scored: List[Tuple[str, float]] = []
+            for text, base in candidates:
+                sr = success_rate.get(text, 0.6)
+                scored.append((text, base * (0.6 + 0.4 * sr)))
+
+            # Sort, dedup, limit 3
+            scored.sort(key=lambda x: x[1], reverse=True)
+            seen = set()
+            out: List[str] = []
+            for text, _ in scored:
+                k = text.strip().lower()
+                if k and k not in seen:
+                    seen.add(k)
+                    out.append(text)
+                if len(out) >= 3:
+                    break
+            return out
         except Exception as e:
             print(f"DEBUG: Error in get_smart_suggestions: {e}")
-            return ["Kiểm tra thời tiết", "Sử dụng máy tính", "Kiểm tra thông tin hệ thống"]
-    
+            return ["xem thoi tiet", "mo may tinh", "xem thong tin he thong"]
     def learn_preference(self, feature: str, preference: str, value: any):
         """Learn user preferences for specific features."""
         if 'preferences' not in self.user_data:
