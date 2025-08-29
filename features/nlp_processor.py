@@ -8,6 +8,7 @@ import json
 # Lazy loading for advanced NLP libraries
 _spacy_nlp = None
 _transformers_pipeline = None
+_requests = None
 
 def get_spacy_nlp():
     global _spacy_nlp
@@ -28,6 +29,16 @@ def get_transformers_pipeline():
         except:
             _transformers_pipeline = None
     return _transformers_pipeline
+
+def get_requests():
+    global _requests
+    if _requests is None:
+        try:
+            import requests
+            _requests = requests
+        except:
+            _requests = None
+    return _requests
 
 # Từ khóa và mẫu cho việc nhận diện tính năng
 keywords = ["hiểu", "phân tích", "ngôn ngữ", "nlp", "xử lý", "lời nói", "cảm xúc", "ý định", "trí tuệ nhân tạo", "ai"]
@@ -58,6 +69,7 @@ class EnhancedNLPProcessor:
         self.user_history = []  # Lưu trữ lịch sử tương tác người dùng
         self.learned_patterns = {}  # Lưu trữ các mẫu đã học từ người dùng
         self.language_preferences = ["vi", "en"]  # Ngôn ngữ được hỗ trợ
+        self.search_history = []  # Lưu trữ lịch sử tìm kiếm
         
     def process_command(self, command: str) -> str:
         """Xử lý lệnh từ người dùng với enhanced processing"""
@@ -77,6 +89,13 @@ class EnhancedNLPProcessor:
         if self._is_reminder_related(enhanced_command, analysis):
             from features.reminder import reminder
             return reminder(enhanced_command)
+        
+        # Kiểm tra xem có nên tìm kiếm thông tin từ bên ngoài không
+        if self._should_search_for_information(analysis):
+            # Trích xuất truy vấn từ phân tích
+            query = self._extract_search_query(enhanced_command, analysis)
+            # Thực hiện tìm kiếm và trả về kết quả
+            return self._search_for_information(query)
         
         # Cập nhật context memory
         self._update_context(enhanced_command, analysis)
@@ -128,6 +147,148 @@ class EnhancedNLPProcessor:
         self._learn_from_interaction(text, enhanced_analysis)
         
         return enhanced_analysis
+    
+    def _search_for_information(self, query: str) -> str:
+        """Tìm kiếm thông tin từ các nguồn bên ngoài khi không thể trả lời câu hỏi"""
+        try:
+            # Kiểm tra xem requests có sẵn không
+            requests = get_requests()
+            if not requests:
+                return "Xin lỗi, tôi không thể tìm kiếm thông tin trực tuyến tại thời điểm này vì thiếu thư viện requests."
+            
+            # URL encode the query for use in URLs
+            import urllib.parse
+            encoded_query = urllib.parse.quote(query)
+            
+            # Thử tìm kiếm với DuckDuckGo Instant Answer API
+            try:
+                search_url = f"https://api.duckduckgo.com/?q={encoded_query}&format=json&no_html=1&skip_disambig=1"
+                response = requests.get(search_url, timeout=5)
+                if response.status_code == 200:
+                    data = response.json()
+                    # Kiểm tra AbstractText trước
+                    if "AbstractText" in data and data["AbstractText"]:
+                        # Lưu vào lịch sử tìm kiếm
+                        self.search_history.append({
+                            "query": query,
+                            "result": data["AbstractText"][:200] + "...",  # Giới hạn độ dài
+                            "timestamp": datetime.datetime.now().isoformat()
+                        })
+                        
+                        # Giữ chỉ 20 lịch sử tìm kiếm gần nhất
+                        if len(self.search_history) > 20:
+                            self.search_history.pop(0)
+                        
+                        return f"Tôi đã tìm thấy thông tin sau về '{query}':\n\n{data['AbstractText'][:500]}..."
+                    
+                    # Nếu không có AbstractText, kiểm tra các section khác
+                    if "RelatedTopics" in data and data["RelatedTopics"]:
+                        # Lấy thông tin từ chủ đề liên quan đầu tiên
+                        first_topic = data["RelatedTopics"][0]
+                        if "Text" in first_topic:
+                            # Lưu vào lịch sử tìm kiếm
+                            self.search_history.append({
+                                "query": query,
+                                "result": first_topic["Text"][:200] + "...",  # Giới hạn độ dài
+                                "timestamp": datetime.datetime.now().isoformat()
+                            })
+                            
+                            # Giữ chỉ 20 lịch sử tìm kiếm gần nhất
+                            if len(self.search_history) > 20:
+                                self.search_history.pop(0)
+                            
+                            return f"Tôi đã tìm thấy thông tin liên quan đến '{query}':\n\n{first_topic['Text'][:500]}..."
+            except Exception as e:
+                pass  # Continue to next search method
+            
+            # Nếu DuckDuckGo không có kết quả, thử Wikipedia API
+            try:
+                wiki_url = f"https://vi.wikipedia.org/api/rest_v1/page/summary/{encoded_query}"
+                response = requests.get(wiki_url, timeout=5)
+                if response.status_code == 200:
+                    data = response.json()
+                    if "extract" in data:
+                        # Lưu vào lịch sử tìm kiếm
+                        self.search_history.append({
+                            "query": query,
+                            "result": data["extract"][:200] + "...",  # Giới hạn độ dài
+                            "timestamp": datetime.datetime.now().isoformat()
+                        })
+                        
+                        # Giữ chỉ 20 lịch sử tìm kiếm gần nhất
+                        if len(self.search_history) > 20:
+                            self.search_history.pop(0)
+                        
+                        return f"Tôi đã tìm thấy thông tin sau về '{query}' từ Wikipedia:\n\n{data['extract'][:500]}..."
+            except Exception as e:
+                pass  # Continue to next search method
+            
+            # Nếu không tìm thấy thông tin từ các nguồn trên
+            return f"Xin lỗi, tôi không thể tìm thấy thông tin về '{query}'. Bạn có thể cung cấp thêm chi tiết không?"
+        except Exception as e:
+            return f"Xin lỗi, đã có lỗi xảy ra khi tìm kiếm thông tin: {str(e)}"
+    
+    def _should_search_for_information(self, analysis: Dict[str, Any]) -> bool:
+        """Xác định xem có nên tìm kiếm thông tin từ bên ngoài hay không"""
+        # Kiểm tra xem đây có phải là câu hỏi không
+        intents = analysis.get("intent", {})
+        is_question = "question" in intents and intents["question"] > 0.5
+        
+        # Kiểm tra độ tin cậy của phân tích
+        confidence = analysis.get("confidence", 0)
+        low_confidence = confidence < 0.4  # Tăng ngưỡng confidence một chút
+        
+        # Kiểm tra xem có thực thể nào không
+        entities = analysis.get("entities", {})
+        has_entities = len(entities) > 0
+        
+        # Kiểm tra các từ khóa câu hỏi đặc trưng
+        question_keywords = ["là gì", "là ai", "ở đâu", "bao nhiêu", "thế nào", "tại sao", "khi nào", "ai là"]
+        text = analysis.get("normalized_text", "").lower()
+        has_question_keywords = any(keyword in text for keyword in question_keywords)
+        
+        # Loại trừ các câu hỏi mà trợ lý có thể xử lý nội bộ
+        internal_question_patterns = [
+            r"mấy\s+giờ", 
+            r"thời\s+gian",
+            r"ngày\s+mấy",
+            r"hôm\s+nay\s+là\s+ngày",
+            r"mấy\s+ngày\s+nữa"
+        ]
+        is_internal_question = any(re.search(pattern, text) for pattern in internal_question_patterns)
+        
+        # Nếu là câu hỏi nội bộ, không tìm kiếm thông tin
+        if is_internal_question:
+            return False
+        
+        # Nếu là câu hỏi hoặc có từ khóa câu hỏi, nên tìm kiếm thông tin
+        if is_question or has_question_keywords:
+            return True
+        
+        # Nếu độ tin cậy thấp và có thực thể, cũng nên tìm kiếm
+        if low_confidence and has_entities:
+            return True
+            
+        return False
+    
+    def _can_answer_with_known_info(self, analysis: Dict[str, Any]) -> bool:
+        """Kiểm tra xem có thể trả lời với thông tin đã biết không"""
+        # Đây là một phương thức đơn giản, trong thực tế có thể phức tạp hơn
+        # Kiểm tra xem intent có phải là các loại có thể xử lý nội bộ không
+        intents = analysis.get("intent", {})
+        internal_intents = ["greeting", "farewell", "thanks", "apology", "reminder", "delete_reminder", "list_reminder"]
+        
+        for intent, score in intents.items():
+            if intent in internal_intents and score > 0.5:
+                return True
+        
+        # Kiểm tra xem có từ khóa liên quan đến các chức năng nội bộ không
+        keywords = analysis.get("keywords", [])
+        internal_keywords = ["nhắc", "nhớ", "lịch", "giờ", "thời gian", "tính", "mở", "đóng", "chạy"]
+        if any(keyword in internal_keywords for keyword in keywords):
+            return True
+            
+        return False
     
     def _learn_from_interaction(self, text: str, analysis: Dict[str, Any]):
         """Học từ tương tác người dùng"""
@@ -702,6 +863,80 @@ class EnhancedNLPProcessor:
         overall_confidence = (intent_conf * 0.5 + entity_conf * 0.3 + sentiment_conf * 0.2)
         
         return min(overall_confidence, 1.0)
+    
+    def _is_question(self, analysis: Dict[str, Any]) -> bool:
+        """Kiểm tra xem phân tích có biểu thị một câu hỏi hay không"""
+        # Kiểm tra intent
+        intents = analysis.get("intent", {})
+        if "question" in intents and intents["question"] > 0.5:
+            return True
+        
+        # Kiểm tra các từ khóa câu hỏi đặc trưng trong văn bản chuẩn hóa
+        text = analysis.get("normalized_text", "").lower()
+        question_indicators = ["là gì", "là ai", "ở đâu", "bao nhiêu", "thế nào", "tại sao", "khi nào", "ai là", "?", "gì", "nào"]
+        return any(indicator in text for indicator in question_indicators)
+    
+    def _extract_search_query(self, command: str, analysis: Dict[str, Any]) -> str:
+        """Trích xuất truy vấn tìm kiếm từ lệnh và phân tích"""
+        # Lấy văn bản đã chuẩn hóa
+        normalized_text = analysis.get("normalized_text", command)
+        
+        # Với các câu hỏi, thường tốt nhất là giữ nguyên cấu trúc câu hỏi nhưng loại bỏ một số từ không cần thiết
+        if self._is_question(analysis):
+            # Loại bỏ các từ không cần thiết cho tìm kiếm nhưng giữ cấu trúc câu hỏi
+            stop_words = ["tôi", "bạn", "mình", "tao", "tớ", "chúng ta", "họ", "các bạn"]
+            query_words = [word for word in normalized_text.split() if word not in stop_words]
+            query = " ".join(query_words)
+            
+            # Đảm bảo truy vấn không quá dài
+            if len(query) > 100:
+                query = query[:100]
+                
+            return query.strip()
+        
+        # Nếu không phải câu hỏi, tiếp tục với logic cũ
+        entities = analysis.get("entities", {})
+        keywords = analysis.get("keywords", [])
+        
+        # Ưu tiên các loại thực thể quan trọng cho tìm kiếm
+        priority_entities = ["person", "location", "date", "time"]
+        search_terms = []
+        
+        # Thêm các thực thể ưu tiên vào truy vấn
+        for entity_type in priority_entities:
+            if entity_type in entities:
+                search_terms.extend(entities[entity_type])
+         
+        # Thêm các từ khóa vào truy vấn
+        search_terms.extend(keywords[:5])  # Giới hạn số lượng từ khóa
+         
+        # Loại bỏ các từ trùng lặp và giữ lại tối đa 7 từ (độ dài tối ưu cho tìm kiếm)
+        unique_terms = list(dict.fromkeys(search_terms))  # Loại bỏ trùng lặp nhưng giữ thứ tự
+        query_terms = unique_terms[:7]
+         
+        # Tạo truy vấn từ các từ đã chọn
+        if query_terms:
+            query = " ".join(query_terms)
+        else:
+            # Nếu không có từ nào, sử dụng văn bản chuẩn hóa
+            query = normalized_text
+        
+        # Loại bỏ các từ không cần thiết cho tìm kiếm
+        stop_words = ["là", "của", "trong", "với", "và", "hoặc", "có", "được", "bởi", "tại", "vì", "nếu", "khi", "mà", "như", "thì", "nhưng"]
+        query_words = [word for word in query.split() if word not in stop_words]
+        query = " ".join(query_words)
+        
+        # Nếu truy vấn quá ngắn, sử dụng lại lệnh gốc (đã chuẩn hóa)
+        if len(query) < 3:
+            # Loại bỏ các từ không cần thiết khỏi lệnh gốc
+            command_words = [word for word in normalized_text.split() if word not in stop_words]
+            query = " ".join(command_words)
+             
+        # Đảm bảo truy vấn không quá dài
+        if len(query) > 100:
+            query = query[:100]
+            
+        return query.strip()
     
     def _format_analysis_result(self, analysis: Dict[str, Any]) -> str:
         """Format detailed analysis results"""
