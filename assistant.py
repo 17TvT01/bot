@@ -62,7 +62,7 @@ def load_features_async():
             feature_files = []
             
             essential_features = ["calculator.py", "system_info.py"]
-            important_features = ["weather.py", "reminder.py", "nlp_processor.py"]
+            important_features = ["weather.py", "reminder.py", "nlp_processor.py", "chitchat.py", "app_launcher.py"]
             supplementary_features = ["ai_enhancements.py", "work_assistant.py"]
             
             # Collect all feature files with priority ordering
@@ -265,6 +265,14 @@ def find_best_feature(command: str, tokens: List[str]) -> Tuple[Optional[Callabl
                 app_name = " ".join(tokens[keyword_index + 1:])
                 return (open_application, 1.0, app_name)
     
+    # Prefer dedicated app launcher when user intends to open an app
+    launch_words = [
+        "mở", "mo", "chạy", "chay", "khởi", "khoi", "khởi động", "khoi dong",
+        "open", "launch", "run", "ứng", "ung", "dụng", "dung", "app"
+    ]
+    if "app_launcher" in current_features and any(w in tokens for w in launch_words):
+        return (current_features["app_launcher"][0], 1.0, command)
+
     # Tier 2: Feature-specific matching
     # System info feature
     if "system_info" in current_features and any(word in tokens for word in ["hệ thống", "thông tin", "máy tính", "system"]):

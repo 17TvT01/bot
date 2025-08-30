@@ -2,6 +2,10 @@ import json
 import os
 import datetime
 import threading
+import time
+import tempfile
+import unicodedata
+import re
 from collections import defaultdict
 from typing import Dict, List, Tuple
 import pickle
@@ -12,12 +16,16 @@ class AIAssistant:
         self.user_data = {}
         self.needs_saving = False
         self._data_loaded = False
+        self._lock = threading.RLock()
+        self._last_decay_check = datetime.datetime.now()
+        self._decay_half_life_days = 14.0
         
         # Tải dữ liệu cơ bản ngay lập tức
         self._load_minimal_data()
         
         # Tải dữ liệu đầy đủ trong background
         threading.Thread(target=self._load_full_data, daemon=True).start()
+        threading.Thread(target=self._autosave_loop, daemon=True).start()
 
     def _load_minimal_data(self):
         """Tải dữ liệu tối thiểu cần thiết cho khởi động nhanh."""
@@ -39,14 +47,17 @@ class AIAssistant:
                         data = pickle.load(f)
                     # Basic validation
                     if isinstance(data, dict):
-                        self.user_data = data
+                        with self._lock:
+                            self.user_data = self._migrate_and_fix_keys(data)
                         print("AI data loaded successfully")
                 except (pickle.UnpicklingError, EOFError, TypeError) as e:
                     print(f"Error loading AI data: {e}")
                     # If file is corrupted or not a dict, create new data
-                    self.user_data = self._create_default_data()
+                    with self._lock:
+                        self.user_data = self._create_default_data()
             else:
-                self.user_data = self._create_default_data()
+                with self._lock:
+                    self.user_data = self._create_default_data()
         finally:
             self._data_loaded = True
             
@@ -61,23 +72,74 @@ class AIAssistant:
         return {
             'usage_patterns': defaultdict(int),
             'time_based_patterns': defaultdict(lambda: defaultdict(int)),
+            'weekday_patterns': defaultdict(lambda: defaultdict(int)),
             'preferences': {},
             'command_history': [],
-            'success_rate': defaultdict(float)
+            'success_rate': defaultdict(float),
+            'version': 2
         }
+
+    def _migrate_and_fix_keys(self, data: Dict) -> Dict:
+        """Ensure loaded data has all expected keys and correct structure."""
+        d = dict(data) if isinstance(data, dict) else {}
+        d.setdefault('usage_patterns', {})
+        d.setdefault('time_based_patterns', {})
+        d.setdefault('weekday_patterns', {})
+        d.setdefault('preferences', {})
+        d.setdefault('command_history', [])
+        d.setdefault('success_rate', {})
+        d.setdefault('version', 2)
+        # Normalize nested structures to plain dicts
+        try:
+            d['usage_patterns'] = dict(d.get('usage_patterns', {}))
+            d['time_based_patterns'] = {k: dict(v) for k, v in dict(d.get('time_based_patterns', {})).items()}
+            d['weekday_patterns'] = {k: dict(v) for k, v in dict(d.get('weekday_patterns', {})).items()}
+            d['success_rate'] = dict(d.get('success_rate', {}))
+        except Exception:
+            pass
+        return d
 
     def _save_data(self):
         """Save user data to file if changes have been made."""
-        if self.needs_saving:
-            # Convert defaultdicts to regular dicts for pickling
-            data_to_save = dict(self.user_data)
-            data_to_save['usage_patterns'] = dict(self.user_data.get('usage_patterns', {}))
-            data_to_save['time_based_patterns'] = {k: dict(v) for k, v in self.user_data.get('time_based_patterns', {}).items()}
-            data_to_save['success_rate'] = dict(self.user_data.get('success_rate', {}))
+        try:
+            if not self.needs_saving:
+                return
+            with self._lock:
+                # Decay usage stats periodically
+                self._apply_decay_if_needed_locked()
+                # Convert defaultdicts to regular dicts for pickling
+                data_to_save = dict(self.user_data)
+                data_to_save['usage_patterns'] = dict(self.user_data.get('usage_patterns', {}))
+                data_to_save['time_based_patterns'] = {k: dict(v) for k, v in self.user_data.get('time_based_patterns', {}).items()}
+                data_to_save['weekday_patterns'] = {k: dict(v) for k, v in self.user_data.get('weekday_patterns', {}).items()} if 'weekday_patterns' in self.user_data else {}
+                data_to_save['success_rate'] = dict(self.user_data.get('success_rate', {}))
+                data_to_save['version'] = 2
+            # Atomic write via temp file
+            dir_name = os.path.dirname(self.data_file) or "."
+            base = os.path.basename(self.data_file)
+            fd, tmp_path = tempfile.mkstemp(prefix=base+".", suffix=".tmp", dir=dir_name)
+            try:
+                with os.fdopen(fd, 'wb') as f:
+                    pickle.dump(data_to_save, f)
+                os.replace(tmp_path, self.data_file)
+                self.needs_saving = False
+            finally:
+                try:
+                    if os.path.exists(tmp_path):
+                        os.remove(tmp_path)
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f"DEBUG: Error during _save_data: {e}")
 
-            with open(self.data_file, 'wb') as f:
-                pickle.dump(data_to_save, f)
-            self.needs_saving = False
+    def _autosave_loop(self):
+        # Periodically persist data to avoid loss
+        while True:
+            try:
+                time.sleep(10)
+                self._save_data()
+            except Exception:
+                time.sleep(10)
 
     def record_command(self, command: str, success: bool = True):
         """Record a command and its success status without immediate saving."""
@@ -92,13 +154,13 @@ class AIAssistant:
             if 'success_rate' not in self.user_data:
                 self.user_data['success_rate'] = {}
             
-            # Store command in history (keep last 100 commands)
+            # Store command in history (keep last 200 commands)
             self.user_data['command_history'].append({
                 'command': command,
                 'timestamp': datetime.datetime.now().isoformat(),
                 'success': success
             })
-            self.user_data['command_history'] = self.user_data['command_history'][-100:]
+            self.user_data['command_history'] = self.user_data['command_history'][-200:]
 
             # Update usage patterns - sử dụng defaultdict để tránh lỗi
             if command not in self.user_data['usage_patterns']:
@@ -106,7 +168,8 @@ class AIAssistant:
             self.user_data['usage_patterns'][command] += 1
 
             # Update time-based patterns
-            current_hour = datetime.datetime.now().hour
+            now = datetime.datetime.now()
+            current_hour = now.hour
             time_category = self._get_time_category(current_hour)
             
             # Đảm bảo time_based_patterns có cấu trúc đúng
@@ -125,6 +188,16 @@ class AIAssistant:
             else:
                 self.user_data['success_rate'][command] = 1.0 if success else 0.0
             
+            # Update weekday-based patterns
+            weekday = str(now.weekday())
+            if 'weekday_patterns' not in self.user_data:
+                self.user_data['weekday_patterns'] = {}
+            if weekday not in self.user_data['weekday_patterns']:
+                self.user_data['weekday_patterns'][weekday] = {}
+            if command not in self.user_data['weekday_patterns'][weekday]:
+                self.user_data['weekday_patterns'][weekday][command] = 0
+            self.user_data['weekday_patterns'][weekday][command] += 1
+            
             self.needs_saving = True
         except Exception as e:
             print(f"DEBUG: Error in record_command: {e}")
@@ -140,68 +213,112 @@ class AIAssistant:
             return "evening"
         else:
             return "night"
+
+    def _apply_decay_if_needed_locked(self):
+        """Apply exponential decay to usage statistics to favor recent behavior."""
+        now = datetime.datetime.now()
+        elapsed_days = (now - self._last_decay_check).total_seconds() / 86400.0
+        if elapsed_days <= 0.25:
+            return
+        self._last_decay_check = now
+        try:
+            factor = 0.5 ** (elapsed_days / max(0.1, self._decay_half_life_days))
+            up = self.user_data.get('usage_patterns', {})
+            for k in list(up.keys()):
+                up[k] = max(0.1, float(up.get(k, 0)) * factor)
+            tb = self.user_data.get('time_based_patterns', {})
+            for bucket, m in list(tb.items()):
+                for k in list(m.keys()):
+                    m[k] = max(0.1, float(m.get(k, 0)) * factor)
+            wb = self.user_data.get('weekday_patterns', {}) if 'weekday_patterns' in self.user_data else {}
+            for bucket, m in list(wb.items()):
+                for k in list(m.keys()):
+                    m[k] = max(0.1, float(m.get(k, 0)) * factor)
+        except Exception as e:
+            print(f"DEBUG: Error applying decay: {e}")
+
+    # --- Text normalization helpers ---
+    def _strip_diacritics(self, s: str) -> str:
+        try:
+            return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+        except Exception:
+            return s
+
+    def _normalize(self, s: str) -> str:
+        s = (s or "").lower().strip()
+        s = re.sub(r"\s+", " ", s)
+        return s
     
     def predict_command(self, partial_command: str = "") -> List[Tuple[str, float]]:
-        """Predict likely commands based on history and context with improved scoring."""
-        predictions = []
-        
-        # Check if data is fully loaded before proceeding
+        """Predict likely commands based on history and context with improved scoring.
+        - Accent-insensitive matching
+        - Combines usage + time-of-day + weekday signals
+        - Decayed counts favor recent behavior
+        """
+        predictions: List[Tuple[str, float]] = []
+
         if not self._data_loaded:
             return []
-            
+
         try:
-            current_hour = datetime.datetime.now().hour
-            time_category = self._get_time_category(current_hour)
-            
-            # Normalize partial command for better matching
-            normalized_partial = partial_command.lower().strip()
-            
-            # Based on usage frequency (higher weight for exact matches)
-            for cmd, count in self.user_data.get('usage_patterns', {}).items():
-                normalized_cmd = cmd.lower()
-                
-                # Exact match gets highest score
-                if normalized_partial == normalized_cmd:
-                    score = 1.0
-                # Partial match
-                elif normalized_partial in normalized_cmd:
-                    # Calculate score based on match position and frequency
-                    position_score = 1.0 - (normalized_cmd.find(normalized_partial) / max(1, len(normalized_cmd)))
-                    frequency_score = count / max(1, sum(self.user_data['usage_patterns'].values()))
-                    score = (position_score * 0.6) + (frequency_score * 0.4)
-                else:
-                    continue
-                    
-                predictions.append((cmd, score))
-            
-            # Based on time of day patterns
-            time_commands = self.user_data.get('time_based_patterns', {}).get(time_category, {})
-            for cmd, count in time_commands.items():
-                normalized_cmd = cmd.lower()
-                
-                if normalized_partial in normalized_cmd:
-                    total_time_commands = sum(time_commands.values())
-                    time_score = count / max(1, total_time_commands) * 0.7
-                    
-                    # Add to existing prediction or create new one
-                    existing_pred = next((p for p in predictions if p[0] == cmd), None)
-                    if existing_pred:
-                        existing_score = existing_pred[1]
-                        predictions.remove(existing_pred)
-                        predictions.append((cmd, max(existing_score, time_score)))
-                    else:
-                        predictions.append((cmd, time_score))
-            
-            # Sort by score and remove duplicates
+            with self._lock:
+                now = datetime.datetime.now()
+                time_category = self._get_time_category(now.hour)
+                weekday = str(now.weekday())
+
+                p = self._normalize(partial_command)
+                p_nf = self._strip_diacritics(p)
+
+                def score_match(text: str, base: float) -> float:
+                    if not text:
+                        return 0.0
+                    t = self._normalize(text)
+                    t_nf = self._strip_diacritics(t)
+                    if not p:
+                        return base
+                    if p == t or p_nf == t_nf:
+                        return base + 0.6
+                    if p in t or p_nf in t_nf:
+                        pos = t.find(p) if p in t else t_nf.find(p_nf)
+                        position_score = 1.0 - (max(0, pos) / max(1, len(t)))
+                        return base + 0.3 + 0.4 * position_score
+                    return 0.0
+
+                usage = self.user_data.get('usage_patterns', {}) or {}
+                total_usage = float(sum(float(v) for v in usage.values())) or 1.0
+                for cmd, cnt in usage.items():
+                    base = float(cnt) / total_usage
+                    s = score_match(cmd, base)
+                    if s > 0:
+                        predictions.append((cmd, s))
+
+                tb = self.user_data.get('time_based_patterns', {}).get(time_category, {})
+                total_tb = float(sum(float(v) for v in tb.values())) or 1.0
+                for cmd, cnt in tb.items():
+                    base = 0.7 * (float(cnt) / total_tb)
+                    s = score_match(cmd, base)
+                    if s > 0:
+                        predictions.append((cmd, s))
+
+                wb = self.user_data.get('weekday_patterns', {}).get(weekday, {}) if 'weekday_patterns' in self.user_data else {}
+                total_wb = float(sum(float(v) for v in wb.values())) or 1.0
+                for cmd, cnt in wb.items():
+                    base = 0.5 * (float(cnt) / total_wb)
+                    s = score_match(cmd, base)
+                    if s > 0:
+                        predictions.append((cmd, s))
+
             predictions.sort(key=lambda x: x[1], reverse=True)
             seen = set()
-            unique_predictions = []
+            out: List[Tuple[str, float]] = []
             for cmd, score in predictions:
-                if cmd not in seen and score > 0.1:  # Minimum threshold
-                    seen.add(cmd)
-                    unique_predictions.append((cmd, score))
-            
-            return unique_predictions[:3]  # Return top 3 most relevant predictions
+                k = self._strip_diacritics(self._normalize(cmd))
+                if k not in seen and score > 0.1:
+                    seen.add(k)
+                    out.append((cmd, score))
+                if len(out) >= 3:
+                    break
+            return out
         except Exception as e:
             print(f"DEBUG: Error in predict_command: {e}")
             return []
@@ -212,10 +329,11 @@ class AIAssistant:
             return ["xem thoi tiet", "mo may tinh", "xem thong tin he thong"]
 
         try:
-            now = datetime.datetime.now()
-            hour = now.hour
-            recent = [c['command'] for c in self.user_data.get('command_history', [])[-10:] if c.get('success')]
-            joined_recent = " ".join(recent).lower()
+            with self._lock:
+                now = datetime.datetime.now()
+                hour = now.hour
+                recent = [c['command'] for c in self.user_data.get('command_history', [])[-10:] if c.get('success')]
+                joined_recent = " ".join(recent).lower()
 
             candidates: List[Tuple[str, float]] = []
 
@@ -296,16 +414,19 @@ class AIAssistant:
             return ["xem thoi tiet", "mo may tinh", "xem thong tin he thong"]
     def learn_preference(self, feature: str, preference: str, value: any):
         """Learn user preferences for specific features."""
-        if 'preferences' not in self.user_data:
-            self.user_data['preferences'] = {}
-        if feature not in self.user_data['preferences']:
-            self.user_data['preferences'][feature] = {}
-        self.user_data['preferences'][feature][preference] = value
+        with self._lock:
+            if 'preferences' not in self.user_data:
+                self.user_data['preferences'] = {}
+            if feature not in self.user_data['preferences']:
+                self.user_data['preferences'][feature] = {}
+            self.user_data['preferences'][feature][preference] = value
+            self.needs_saving = True
         self._save_data()
     
     def get_preference(self, feature: str, preference: str, default: any = None) -> any:
         """Get user preference for a specific feature."""
-        return self.user_data.get('preferences', {}).get(feature, {}).get(preference, default)
+        with self._lock:
+            return self.user_data.get('preferences', {}).get(feature, {}).get(preference, default)
 
 # --- Lazy-loaded singleton pattern ---
 _ai_assistant_instance = None
