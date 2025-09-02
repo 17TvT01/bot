@@ -13,6 +13,14 @@ import pickle
 class AIAssistant:
     def __init__(self):
         self.data_file = "assistant_data.pkl"
+        # Human‑readable JSON snapshot lives alongside data_file
+        try:
+            dir_name = os.path.dirname(self.data_file) or "."
+            base_name = os.path.splitext(os.path.basename(self.data_file))[0]
+            self.snapshot_file = os.path.join(dir_name, f"{base_name}.json")
+        except Exception:
+            # Fallback if path ops fail
+            self.snapshot_file = "assistant_data.json"
         self.user_data = {}
         self.needs_saving = False
         self._data_loaded = False
@@ -137,9 +145,80 @@ class AIAssistant:
         while True:
             try:
                 time.sleep(10)
+                try:
+                    # Light compaction to keep data bounded
+                    self._compact_locked()
+                except Exception:
+                    pass
                 self._save_data()
+                try:
+                    # Best-effort JSON snapshot to aid recovery and portability
+                    self._snapshot_json()
+                except Exception:
+                    pass
             except Exception:
                 time.sleep(10)
+
+    def _snapshot_json(self):
+        """Write a human-readable JSON snapshot of current data."""
+        try:
+            with self._lock:
+                data_to_save = dict(self.user_data)
+                data_to_save['usage_patterns'] = dict(self.user_data.get('usage_patterns', {}))
+                data_to_save['time_based_patterns'] = {k: dict(v) for k, v in self.user_data.get('time_based_patterns', {}).items()}
+                data_to_save['weekday_patterns'] = {k: dict(v) for k, v in self.user_data.get('weekday_patterns', {}).items()} if 'weekday_patterns' in self.user_data else {}
+                data_to_save['success_rate'] = dict(self.user_data.get('success_rate', {}))
+                data_to_save['version'] = 3
+            # Ensure directory exists
+            try:
+                snap_dir = os.path.dirname(self.snapshot_file)
+                if snap_dir:
+                    os.makedirs(snap_dir, exist_ok=True)
+            except Exception:
+                pass
+            with open(self.snapshot_file, 'w', encoding='utf-8') as jf:
+                json.dump(data_to_save, jf, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"DEBUG: Error in _snapshot_json: {e}")
+
+    def _compact_locked(self):
+        """Reduce very low-signal entries to keep storage tidy."""
+        with self._lock:
+            # Trim history already handled elsewhere by slice; enforce again
+            self.user_data['command_history'] = self.user_data.get('command_history', [])[-1000:]
+
+            # Remove usage patterns below tiny threshold
+            up = dict(self.user_data.get('usage_patterns', {}) or {})
+            if up:
+                thr = max(0.1, (sum(float(v) for v in up.values()) / max(1, len(up))) * 0.01)
+                up = {k: float(v) for k, v in up.items() if float(v) >= thr}
+                # Keep top 1000 entries
+                top = sorted(up.items(), key=lambda x: x[1], reverse=True)[:1000]
+                self.user_data['usage_patterns'] = {k: v for k, v in top}
+
+            # Compact time_based_patterns
+            tb = self.user_data.get('time_based_patterns', {}) or {}
+            for bucket, m in list(tb.items()):
+                if not isinstance(m, dict):
+                    m = dict(m)
+                if m:
+                    thr = max(0.1, (sum(float(v) for v in m.values()) / max(1, len(m))) * 0.01)
+                    arr = [(k, float(v)) for k, v in m.items() if float(v) >= thr]
+                    arr.sort(key=lambda x: x[1], reverse=True)
+                    tb[bucket] = {k: v for k, v in arr[:500]}
+            self.user_data['time_based_patterns'] = tb
+
+            # Compact weekday_patterns similarly
+            wb = self.user_data.get('weekday_patterns', {}) or {}
+            for bucket, m in list(wb.items()):
+                if not isinstance(m, dict):
+                    m = dict(m)
+                if m:
+                    thr = max(0.1, (sum(float(v) for v in m.values()) / max(1, len(m))) * 0.01)
+                    arr = [(k, float(v)) for k, v in m.items() if float(v) >= thr]
+                    arr.sort(key=lambda x: x[1], reverse=True)
+                    wb[bucket] = {k: v for k, v in arr[:500]}
+            self.user_data['weekday_patterns'] = wb
 
     def record_command(self, command: str, success: bool = True):
         """Record a command and its success status without immediate saving."""
@@ -154,13 +233,13 @@ class AIAssistant:
             if 'success_rate' not in self.user_data:
                 self.user_data['success_rate'] = {}
             
-            # Store command in history (keep last 200 commands)
+            # Store command in history (keep last 1000 commands)
             self.user_data['command_history'].append({
                 'command': command,
                 'timestamp': datetime.datetime.now().isoformat(),
                 'success': success
             })
-            self.user_data['command_history'] = self.user_data['command_history'][-200:]
+            self.user_data['command_history'] = self.user_data['command_history'][-1000:]
 
             # Update usage patterns - sử dụng defaultdict để tránh lỗi
             if command not in self.user_data['usage_patterns']:

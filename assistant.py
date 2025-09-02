@@ -6,7 +6,9 @@ import threading
 import concurrent.futures
 from functools import lru_cache
 from typing import Dict, Callable, List, Tuple, Optional, Any
+import unicodedata
 import time
+import sys
 
 # Lazy loading for heavy libraries
 _word_tokenize = None
@@ -53,6 +55,39 @@ basic_features_loaded = False  # Flag để đánh dấu khi tính năng cơ b�
 # Thread pool for feature execution
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
+
+def _debug(msg: str):
+    """Print debug messages safely without crashing on encoding issues."""
+    try:
+        enc = getattr(sys.stdout, "encoding", None) or "utf-8"
+        try:
+            sys.stdout.write(str(msg) + "\n")
+        except UnicodeEncodeError:
+            sys.stdout.write(str(msg).encode(enc, errors="replace").decode(enc, errors="replace") + "\n")
+    except Exception:
+        try:
+            print(str(msg))
+        except Exception:
+            pass
+
+def _safe_display(text: str) -> str:
+    """Return text safe for display without mojibake: strip diacritics and non-ASCII control chars."""
+    try:
+        t = text if isinstance(text, str) else str(text)
+        # Remove combining marks (accents)
+        t = ''.join(c for c in unicodedata.normalize('NFD', t) if unicodedata.category(c) != 'Mn')
+        # Remove non-printable / non-ASCII (keep common whitespace)
+        import re as _re
+        t = _re.sub(r"[^\x09\x0A\x0D\x20-\x7E]", "", t)
+        # Normalize whitespace
+        t = _re.sub(r"\s+", " ", t).strip()
+        return t
+    except Exception:
+        try:
+            return (text or "").encode('ascii', errors='ignore').decode('ascii', errors='ignore')
+        except Exception:
+            return ""
+
 def load_features_async():
     """Load features in a background thread at startup with optimized loading."""
     def _load_features():
@@ -63,7 +98,7 @@ def load_features_async():
             
             essential_features = ["calculator.py", "system_info.py"]
             important_features = ["weather.py", "reminder.py", "nlp_processor.py", "chitchat.py", "app_launcher.py"]
-            supplementary_features = ["ai_enhancements.py", "work_assistant.py"]
+            supplementary_features = ["ai_enhancements.py", "work_assistant.py", "gemini_bridge.py"]
             
             # Collect all feature files with priority ordering
             for filename in os.listdir(features_dir):
@@ -90,7 +125,6 @@ def load_features_async():
                 _load_feature_batch(essential_batch, features_dir)
                 # Đánh dấu là đã tải các tính năng cơ bản
                 basic_features_loaded = True
-                features_loaded.set()
             
             # Sau đó tải các tính năng quan trọng
             important_batch = [f for f in feature_files if f in important_features]
@@ -126,11 +160,12 @@ def _load_feature_batch(filenames: List[str], features_dir: str):
 
             # Find the appropriate function with priority
             function = None
+            # Prefer explicit module-level handler names first, then getters
             function_names = [
-                f"get_{module_name}",
                 module_name,
                 "main",
-                "handle"
+                "handle",
+                f"get_{module_name}"
             ]
             
             for func_name in function_names:
@@ -194,8 +229,10 @@ def open_application(app_name: str) -> str:
         "ghi chú": "notepad.exe"
     }
     
-    # Get the actual executable name from mapping, or use the input as is
-    executable_name = app_mapping.get(app_name.lower(), app_name)
+    # Get the actual executable name (whitelist only)
+    executable_name = app_mapping.get(app_name.lower())
+    if not executable_name:
+        return "Ứng dụng chưa nằm trong danh sách an toàn. Thử: notepad, calc, paint, chrome, edge, word, excel, powerpoint."
     
     try:
         if os.name == 'nt':
@@ -205,6 +242,42 @@ def open_application(app_name: str) -> str:
             return "Chức năng này chỉ hỗ trợ Windows."
     except Exception as e:
         return f"Lỗi khi mở ứng dụng {app_name}: {e}"
+
+def show_help(command: Optional[str] = None) -> str:
+    """Trả về danh sách chức năng và ví dụ sử dụng."""
+    try:
+        lines = []
+        lines.append("Mình có thể giúp bạn với các chức năng sau:")
+
+        # Luôn sẵn sàng (cơ bản)
+        lines.append("- Thời gian: hỏi giờ hiện tại. Ví dụ: 'mấy giờ rồi?'")
+        lines.append("- Tính toán: cộng/trừ/nhân/chia. Ví dụ: 'tính 5 cộng 3'")
+        lines.append("- Mở ứng dụng: notepad, chrome,... Ví dụ: 'mở notepad'")
+
+        # Theo các tính năng đã/đang tải
+        with feature_loading_lock:
+            available = set(features.keys())
+        if "weather" in available:
+            lines.append("- Thời tiết: 'thời tiết Hà Nội', 'nhiệt độ Sài Gòn'")
+        if "system_info" in available:
+            lines.append("- Thông tin hệ thống: 'thông tin hệ thống'")
+        if "reminder" in available:
+            lines.append("- Nhắc việc: 'nhắc tôi uống nước sau 10 phút'")
+        if "app_launcher" in available:
+            lines.append("- Khởi chạy ứng dụng hệ thống khác")
+        if "chitchat" in available:
+            lines.append("- Trò chuyện: 'kể chuyện cười', 'chào'…")
+        if "nlp_processor" in available or "work_assistant" in available:
+            lines.append("- Xử lý ngôn ngữ/Trợ lý công việc: hỏi/tra cứu đơn giản")
+
+        lines.append("- Trợ giúp: 'trợ giúp', 'bạn có thể làm gì', 'giới thiệu chức năng'")
+
+        if not available:
+            lines.append("(Một số tính năng đang được tải nền; bạn có thể dùng các chức năng cơ bản ngay bây giờ.)")
+
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Không thể lấy danh sách chức năng: {e}"
 
 # Pre-load basic built-in features for faster response
 basic_features = {
@@ -223,6 +296,24 @@ def preprocess_text(text: str) -> List[str]:
     """
     tokenize = get_word_tokenize()
     return tokenize(text.lower())
+
+def _strip_diacritics(s: str) -> str:
+    """Remove Vietnamese diacritics for accent-insensitive matching."""
+    try:
+        return ''.join(c for c in unicodedata.normalize('NFD', s or '') if unicodedata.category(c) != 'Mn')
+    except Exception:
+        return (s or '').lower()
+
+def _normalize_for_match(s: str) -> str:
+    """Lowercase, strip diacritics and collapse whitespace for robust keyword checks."""
+    s = (s or '').lower()
+    s = _strip_diacritics(s)
+    try:
+        import re as _re
+        s = _re.sub(r"\s+", " ", s).strip()
+    except Exception:
+        s = s.strip()
+    return s
 
 # Pre-cache common commands for faster response
 _common_commands_cache = {}
@@ -252,6 +343,67 @@ def find_best_feature(command: str, tokens: List[str]) -> Tuple[Optional[Callabl
 
     with feature_loading_lock:
         current_features = features.copy()
+
+    # Normalized text for robust matching (accent-insensitive, whitespace-collapsed)
+    norm_cmd = _normalize_for_match(command)
+
+    # Early: provider triggers (explicit user intent)
+    try:
+        from features.gemini_bridge import is_configured as _gm_conf  # type: ignore
+    except Exception:
+        _gm_conf = lambda: False  # type: ignore
+    try:
+        from features.chatgpt_bridge import is_configured as _cg_conf  # type: ignore
+    except Exception:
+        _cg_conf = lambda: False  # type: ignore
+
+    if ("gemini" in norm_cmd or "hoi gemini" in norm_cmd or "h?i gemini" in norm_cmd) and "gemini_bridge" in current_features and _gm_conf():
+        return (current_features["gemini_bridge"][0], 1.0, command)
+    if ("chatgpt" in norm_cmd or "hoi chatgpt" in norm_cmd or "h?i chatgpt" in norm_cmd) and "chatgpt_bridge" in current_features and _cg_conf():
+        return (current_features["chatgpt_bridge"][0], 1.0, command)
+
+    # Early: normalized help detection
+    _help_norm = [
+        "ban co the lam gi",
+        "ban co chuc nang gi",
+        "gioi thieu chuc nang",
+        "tro giup",
+        "huong dan",
+        "help"
+    ]
+    if any(p in norm_cmd for p in _help_norm):
+        return (show_help, 1.0, command)
+
+    # Early: time queries (avoid misrouting "mấy giờ" as app launch due to diacritics)
+    _time_norm = ["may gio", "gio", "thoi gian"]
+    if any(w in norm_cmd for w in _time_norm):
+        return (get_time, 1.0, "")
+
+    # Early: normalized app-launch intent to prefer app_launcher
+    if "app_launcher" in current_features:
+        _launch_norm = ["may", "mo", "chay", "khoi dong", "khoi", "open", "launch", "run", "ung dung", "app"]
+        if any(w in norm_cmd for w in _launch_norm):
+            return (current_features["app_launcher"][0], 1.0, command)
+
+    # Early: route general questions.
+    # First let NLP handle; only escalate to providers if NLP is unavailable or later deemed insufficient
+    q_words = ["la gi", "la ai", "o dau", "bao nhieu", "the nao", "tai sao", "khi nao", "ai la"]
+    if ("?" in command) or any(q in norm_cmd for q in q_words):
+        if "nlp_processor" in current_features:
+            return (current_features["nlp_processor"][0], 1.0, command)
+        # If NLP not available, fall back to preferred/provider later
+
+    # Help/intro phrases (substring match; robust to tokenization)
+    help_phrases = [
+        "bạn có thể làm gì",
+        "bạn có chức năng gì",
+        "giới thiệu chức năng",
+        "trợ giúp",
+        "hướng dẫn",
+        "help"
+    ]
+    if any(p in command.lower() for p in help_phrases):
+        return (show_help, 1.0, command)
 
     # Tier 1: Fast keyword matching for built-in commands
     if any(word in tokens for word in ["giờ", "thời gian"]):
@@ -337,34 +489,213 @@ def run_feature_async(command: str, callback: Callable[[str], None]):
         try:
             print(f"DEBUG: Processing command: '{command}'")
             tokens = preprocess_text(command)
+
+            # --- Simple teach-and-reply feature ---
+            try:
+                taught_path = os.path.join(os.path.dirname(__file__), 'taught.json')
+                import json as _json
+                taught = {}
+                if os.path.exists(taught_path):
+                    try:
+                        with open(taught_path, 'r', encoding='utf-8', errors='replace') as f:
+                            data = _json.load(f)
+                        if isinstance(data, dict):
+                            taught = {str(k): str(v) for k, v in data.items()}
+                    except Exception:
+                        taught = {}
+
+                # Teach syntax: "day: <pattern> => <reply>" or "teach: ... => ..."
+                try:
+                    teach_pat = re.compile(r"^(day|teach)\s*[:\-]?\s*(.+?)\s*(=>|->|:)\s*(.+)$", re.IGNORECASE)
+                    m = teach_pat.match(_strip_diacritics(command))
+                    if m:
+                        key = _normalize_for_match(m.group(2))
+                        val = m.group(4).strip()
+                        if key and val:
+                            taught[key] = val
+                            try:
+                                with open(taught_path, 'w', encoding='utf-8') as f:
+                                    _json.dump(taught, f, ensure_ascii=False, indent=2)
+                            except Exception:
+                                pass
+                            result = f"Da hoc: khi thay '{key}' se tra loi: '{val}'"
+                            callback(result)
+                            return
+                except Exception:
+                    pass
+
+                # If a taught pattern matches, answer immediately
+                try:
+                    norm_cmd_quick = _normalize_for_match(command)
+                    for k, v in taught.items():
+                        if k and k in norm_cmd_quick:
+                            callback(v)
+                            return
+                except Exception:
+                    pass
+            except Exception:
+                pass
             feature, confidence, params = find_best_feature(command, tokens)
             
             if feature:
                 print(f"DEBUG: Found feature: {getattr(feature, '__name__', 'unknown')} with confidence {confidence}")
                 result = feature(params)
+                # Ensure result is a string for downstream processing and logging
+                if not isinstance(result, str):
+                    try:
+                        result = str(result)
+                    except Exception:
+                        result = ""
                 print(f"DEBUG: Feature result: {result}")
+                # If NLP handled but returned low-value output, escalate to provider
+                try:
+                    with feature_loading_lock:
+                        current_features = features.copy()
+                    selected_name = None
+                    for name, (func, _, _) in current_features.items():
+                        if func is feature:
+                            selected_name = name
+                            break
+                    def _should_escalate(cmd: str, res: str) -> bool:
+                        try:
+                            if not isinstance(res, str):
+                                return True
+                            r = res.strip().lower()
+                            if not r:
+                                return True
+                            bad_starts = ["xin loi", "xin li", "khong the", "khong tim", "khong hieu", "da phan tich"]
+                            if any(r.startswith(p) for p in bad_starts):
+                                return True
+                            # Heuristic: if result contains only meta like "Y dinh:" without content
+                            if r.startswith("y dinh:") and ("|" in r or len(r) < 40):
+                                return True
+                            return False
+                        except Exception:
+                            return False
+                    if selected_name == 'nlp_processor' and _should_escalate(command, result):
+                        # Ask via preferred provider
+                        def _provider_answer(cmd: str) -> Optional[str]:
+                            try:
+                                from features.provider_prefs import get_default_provider  # type: ignore
+                                preferred = get_default_provider()
+                            except Exception:
+                                preferred = None
+                            # Safe gemini symbols
+                            try:
+                                from features.gemini_bridge import ask_gemini, is_configured as is_gemini_configured  # type: ignore
+                            except Exception:
+                                ask_gemini = None  # type: ignore
+                                def is_gemini_configured(): return False  # type: ignore
+                            # Try preferred first
+                            if preferred == 'chatgpt':
+                                try:
+                                    from features.chatgpt_bridge import ask_chatgpt, is_configured as is_cg  # type: ignore
+                                    if is_cg():
+                                        return ask_chatgpt(cmd)
+                                except Exception:
+                                    pass
+                            if preferred == 'gemini' and ask_gemini and is_gemini_configured():
+                                try:
+                                    return ask_gemini(cmd)
+                                except Exception:
+                                    pass
+                            # Otherwise try any configured
+                            try:
+                                from features.chatgpt_bridge import ask_chatgpt, is_configured as is_cg  # type: ignore
+                                if is_cg():
+                                    return ask_chatgpt(cmd)
+                            except Exception:
+                                pass
+                            if ask_gemini and is_gemini_configured():
+                                try:
+                                    return ask_gemini(cmd)
+                                except Exception:
+                                    pass
+                            return None
+                        alt = _provider_answer(command)
+                        if isinstance(alt, str) and alt.strip():
+                            result = alt
+                except Exception:
+                    pass
                 # Enhance with AI if available
                 try:
                     from features.ai_enhancements import enhance_with_ai
                     result = enhance_with_ai(result, command, True)
                 except ImportError:
                     pass  # AI features not available
+                # Return early for handled feature to avoid running global fallback block
+                try:
+                    callback(result)
+                finally:
+                    return
             else:
-                # Generate suggestions
-                suggestions = []
-                with feature_loading_lock:
-                    for _, (_, keywords, patterns) in features.items():
-                        for pattern in patterns:
-                            if get_fuzz().partial_ratio(command, pattern) > 60:
-                                suggestions.append(pattern)
-                                break
-                
-                if suggestions:
-                    suggestion_text = "\n".join(f"- {s}" for s in suggestions[:3])
-                    result = f"Xin lỗi, tôi không hiểu. Có phải bạn muốn nói:\n{suggestion_text}"
+                # Fallback path when no feature matched
+                # Safe defaults for provider symbols
+                ask_gemini = None
+                def is_gemini_configured():  # type: ignore
+                    return False
+                try:
+                    from features.gemini_bridge import ask_gemini as _ask_gemini, is_configured as _is_gemini_configured  # type: ignore
+                    ask_gemini = _ask_gemini
+                    is_gemini_configured = _is_gemini_configured  # type: ignore
+                except Exception:
+                    pass
+            # Use preferred provider for fallback when nothing matched
+            try:
+                from features.provider_prefs import get_default_provider  # type: ignore
+                preferred = get_default_provider()
+            except Exception:
+                preferred = None
+            used = False
+            if preferred == "chatgpt":
+                try:
+                    from features.chatgpt_bridge import ask_chatgpt, is_configured as is_cg  # type: ignore
+                    if is_cg():
+                        print("DEBUG: No feature found. Falling back to ChatGPT (preferred).")
+                        result = ask_chatgpt(command)
+                        used = True
+                except Exception:
+                    pass
+            elif preferred == "gemini":
+                try:
+                    if is_gemini_configured():
+                        print("DEBUG: No feature found. Falling back to Gemini (preferred).")
+                        result = ask_gemini(command)
+                        used = True
+                except Exception:
+                    pass
+            if not used:
+                if is_gemini_configured():
+                    print("DEBUG: No feature found. Falling back to Gemini.")
+                    result = ask_gemini(command)
                 else:
+                    try:
+                        from features.chatgpt_bridge import ask_chatgpt, is_configured as is_cg  # type: ignore
+                        if is_cg():
+                            print("DEBUG: No feature found. Falling back to ChatGPT.")
+                            result = ask_chatgpt(command)
+                            used = True
+                    except Exception:
+                        pass
+                    else:
+                        # Original fallback logic
+                        suggestions = []
+                        with feature_loading_lock:
+                            for _, (_, keywords, patterns) in features.items():
+                                for pattern in patterns:
+                                    if get_fuzz().partial_ratio(command, pattern) > 60:
+                                        suggestions.append(pattern)
+                                        break
+                        
+                        if suggestions:
+                            suggestion_text = "\n".join(f"- {s}" for s in suggestions[:3])
+                            result = f"Xin lỗi, tôi không hiểu. Có phải bạn muốn nói:\n{suggestion_text}"
+                        else:
+                            result = "Xin lỗi, tôi không hiểu yêu cầu của bạn. Hãy thử diễn đạt theo cách khác."
+                # except ImportError:
+                    # Fallback if gemini_bridge doesn't exist
                     result = "Xin lỗi, tôi không hiểu yêu cầu của bạn. Hãy thử diễn đạt theo cách khác."
-                
+
                 # Enhance error response with AI
                 try:
                     from features.ai_enhancements import enhance_with_ai
@@ -373,7 +704,17 @@ def run_feature_async(command: str, callback: Callable[[str], None]):
                     pass
             
             # Đảm bảo callback được gọi trong luồng chính của GUI
-            print(f"DEBUG: Calling callback with result: {result[:50]}..." if len(result) > 50 else f"DEBUG: Calling callback with result: {result}")
+            try:
+                prev = result
+                result = result if isinstance(result, str) else str(result)
+                safe = result
+                try:
+                    safe = _safe_display(result)
+                except Exception:
+                    pass
+                _debug(f"DEBUG: Calling callback with result: {safe[:50]}..." if len(safe) > 50 else f"DEBUG: Calling callback with result: {safe}")
+            except Exception:
+                pass
             callback(result)
         except Exception as e:
             error_msg = f"Có lỗi xảy ra: {str(e)}"
@@ -383,9 +724,9 @@ def run_feature_async(command: str, callback: Callable[[str], None]):
                 error_msg = enhance_with_ai(error_msg, command, False)
             except ImportError:
                 pass
-            print(f"DEBUG: About to call callback with error: {error_msg}")
+            _debug(f"DEBUG: About to call callback with error: {error_msg}")
             callback(error_msg)
-            print("DEBUG: Callback finished.")
+            _debug("DEBUG: Callback finished.")
     
     # Submit to thread pool and ensure callback runs in main thread
     def _safe_process():
@@ -416,6 +757,14 @@ def run_feature(command: str) -> str:
     return result_container[0] if result_container[0] is not None else "Timeout: Không thể xử lý yêu cầu"
 
 def initialize_assistant():
-    """Initializes the assistant's features in the background."""
-    _precache_common_commands()
+    """Initializes the assistant without blocking the UI thread.
+
+    - Starts feature loading in a background thread.
+    - Runs precache of common commands in a separate daemon thread to avoid
+      heavy NLP imports (e.g., underthesea) from blocking the GUI startup.
+    """
+    # Start loading features first (non-blocking)
     load_features_async()
+
+    # Run precache in background so any heavy imports don't block the UI
+    threading.Thread(target=_precache_common_commands, daemon=True).start()

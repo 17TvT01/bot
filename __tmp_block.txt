@@ -1,0 +1,22 @@
+            return
+
+        self._user_message(user_input)
+        self.input_entry.delete(0, tk.END)
+
+        self.input_entry.config(state=tk.DISABLED)
+        self.send_button.config(state=tk.DISABLED)
+        self.processing = True
+        self.status_label.config(text="Đang xử lý…")
+        try:
+            self.progress.pack(side=tk.RIGHT)
+            self.progress.start(24)
+        except Exception:
+            pass
+        self._assistant_message("(đang xử lý yêu cầu…)")
+
+        def main_thread_callback(result):
+            self.root.after(0, lambda: self._handle_response(result))
+
+        assistant.run_feature_async(user_input.lower(), main_thread_callback)
+
+    def _handle_response(self, response):

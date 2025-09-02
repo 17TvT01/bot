@@ -1299,6 +1299,21 @@ def get_nlp_processor() -> EnhancedNLPProcessor:
         _nlp_processor = EnhancedNLPProcessor()
     return _nlp_processor
 
+# Module-level entry point for the assistant router
+def nlp_processor(command: str = None) -> str:
+    """Process a command using the enhanced NLP processor and return a human-readable summary."""
+    proc = get_nlp_processor()
+    if not command:
+        return "Vui lòng nhập câu lệnh hoặc câu hỏi để phân tích."
+    try:
+        return proc.process_command(command)
+    except Exception:
+        # Fallback to a lighter analysis path if detailed processing fails
+        try:
+            return enhance_with_nlp(command)
+        except Exception as e:
+            return f"Không thể xử lý với NLP: {e}"
+
 def analyze_user_input(text: str) -> Dict[str, Any]:
     """Phân tích đầu vào của người dùng với enhanced capabilities"""
     processor = get_nlp_processor()

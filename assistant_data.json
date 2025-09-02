@@ -1,0 +1,1050 @@
+{
+  "usage_patterns": {
+    "thông tin hệ thống": 49.0,
+    "tính 23 * 47": 13.0,
+    "nhắc nhở lúc 8h mai họp nhóm": 12.0,
+    "thời tiết hôm nay": 12.0,
+    "xin chào": 5.0,
+    "mấy giờ rồi": 5.0,
+    "xem danh sách sự kiện": 2.0,
+    "nè": 2.0,
+    "nhắc tôi họp lúc 14h ngày mai": 1.0,
+    "7 cộng 10 bằng ?": 1.0,
+    "ngày mai có những sự kiện nào ?": 1.0,
+    "xóa lời nhắc cuộc họp giúp tôi": 1.0,
+    "đặt báo thức 6h sáng mai": 1.0,
+    "nhắc tôi họp lúc 15h ngày mai": 1.0,
+    "xóa cuộc họp lục 15h ngày mai": 1.0,
+    "ngày mai có sự kiện gì": 1.0,
+    "xóa nhắc nhở 15h ngày mai": 1.0,
+    "sự kiện ngày mai": 1.0,
+    "xóa cuộc họp lúc 15h ngày mai": 1.0,
+    "xem ghi chú hôm nay": 1.0,
+    "hôm nay có sự kiện gì không": 1.0,
+    "xóa danh sách sự kiện": 1.0,
+    "xóa nhắc nhở có id 1756097951": 1.0,
+    "xóa toàn bộ nhắc nhở": 1.0,
+    "xóa nhắc nhở id  1756098844": 1.0,
+    "xóa nhắc nhở id 1756190573": 1.0,
+    "mở êord": 1.0,
+    "mở word": 1.0,
+    "xem danh sách thông báo": 1.0,
+    "xóa nhắc nhở id 1756057099": 1.0,
+    "may gio roi": 1.0,
+    "mở game đi": 1.0,
+    "bạn có thể làm được gì nhỉ": 1.0,
+    "bạn có chức năng gì?": 1.0,
+    "may": 1.0,
+    "roi": 1.0,
+    "bây giờ là mấy giờ rồi": 1.0,
+    "xem thời tiết ngày mai tại hà nội": 1.0,
+    "xem thông tin hệ thống": 1.0,
+    "bạn có thể làm được những gì": 1.0,
+    "bạn có thể tự ẩn phần gợi ý thông minh đi không": 1.0,
+    "mở trình  duyệt": 1.0,
+    "mở máy tính": 1.0,
+    "đóng máytính": 1.0,
+    "tôi đang gọi bạn đó": 1.0,
+    "Thông tin hệ thống": 1.0,
+    "Mấy giờ rồi": 1.0,
+    "hỏi chatgpt": 1.0,
+    "đâu là thủ đô của việt nam": 1.0,
+    "Đâu là thủ đô của mỹ": 1.0,
+    "chào cậu": 1.0,
+    "mở vscode": 1.0,
+    "đâu là thủ đô của mỹ": 1.0,
+    "bạn có thể viết code không": 1.0,
+    "trong lập trình i += 2 có nghĩa là gì ?": 1.0,
+    "I += 2 có nghĩa là gì trong lập trình": 1.0,
+    "hỏi gemini": 1.0,
+    "I +=2 có nghĩa là gì trong lập trình ?": 1.0,
+    "Hỏi gemini I + = 2 có ý nghĩa gì trong lập trình ?": 1.0,
+    "hỏi gemini trong lập trình i+=2 có nghĩa gì": 1.0,
+    "7 + 7 bằng mấy": 1.0,
+    "tính 5*5": 1.0,
+    "trong lập trình i += 2 có ý nghĩa là gì": 1.0
+  },
+  "time_based_patterns": {
+    "afternoon": {
+      "mấy giờ rồi": 3.0,
+      "xem danh sách sự kiện": 2.0,
+      "xin chào": 2.0,
+      "thông tin hệ thống": 2.0,
+      "nhắc nhở lúc 8h mai họp nhóm": 2.0,
+      "sự kiện ngày mai": 1.0,
+      "xóa cuộc họp lúc 15h ngày mai": 1.0,
+      "xem ghi chú hôm nay": 1.0,
+      "hôm nay có sự kiện gì không": 1.0,
+      "xóa danh sách sự kiện": 1.0,
+      "mở êord": 1.0,
+      "mở word": 1.0,
+      "xem danh sách thông báo": 1.0,
+      "xóa nhắc nhở id 1756057099": 1.0,
+      "may gio roi": 1.0,
+      "mở game đi": 1.0,
+      "bây giờ là mấy giờ rồi": 1.0,
+      "xem thời tiết ngày mai tại hà nội": 1.0,
+      "xem thông tin hệ thống": 1.0,
+      "bạn có thể làm được những gì": 1.0,
+      "nè": 1.0,
+      "hỏi chatgpt": 1.0,
+      "tính 23 * 47": 1.0,
+      "thời tiết hôm nay": 1.0
+    },
+    "night": {
+      "thông tin hệ thống": 45.0,
+      "tính 23 * 47": 11.0,
+      "nhắc nhở lúc 8h mai họp nhóm": 9.0,
+      "thời tiết hôm nay": 9.0,
+      "xin chào": 2.0,
+      "mấy giờ rồi": 2.0,
+      "nhắc tôi họp lúc 14h ngày mai": 1.0,
+      "7 cộng 10 bằng ?": 1.0,
+      "ngày mai có những sự kiện nào ?": 1.0,
+      "xóa lời nhắc cuộc họp giúp tôi": 1.0,
+      "đặt báo thức 6h sáng mai": 1.0,
+      "bạn có thể làm được gì nhỉ": 1.0,
+      "bạn có chức năng gì?": 1.0,
+      "mở trình  duyệt": 1.0,
+      "mở máy tính": 1.0,
+      "đóng máytính": 1.0,
+      "nè": 1.0,
+      "tôi đang gọi bạn đó": 1.0,
+      "Thông tin hệ thống": 1.0,
+      "Mấy giờ rồi": 1.0,
+      "bạn có thể viết code không": 1.0,
+      "trong lập trình i += 2 có nghĩa là gì ?": 1.0,
+      "I += 2 có nghĩa là gì trong lập trình": 1.0,
+      "hỏi gemini": 1.0,
+      "I +=2 có nghĩa là gì trong lập trình ?": 1.0,
+      "Hỏi gemini I + = 2 có ý nghĩa gì trong lập trình ?": 1.0,
+      "hỏi gemini trong lập trình i+=2 có nghĩa gì": 1.0,
+      "7 + 7 bằng mấy": 1.0,
+      "tính 5*5": 1.0,
+      "trong lập trình i += 2 có ý nghĩa là gì": 1.0
+    },
+    "morning": {
+      "nhắc tôi họp lúc 15h ngày mai": 1.0,
+      "xóa cuộc họp lục 15h ngày mai": 1.0,
+      "ngày mai có sự kiện gì": 1.0,
+      "xóa nhắc nhở 15h ngày mai": 1.0
+    },
+    "evening": {
+      "thông tin hệ thống": 2.0,
+      "thời tiết hôm nay": 2.0,
+      "xóa nhắc nhở có id 1756097951": 1.0,
+      "xóa toàn bộ nhắc nhở": 1.0,
+      "xóa nhắc nhở id  1756098844": 1.0,
+      "xóa nhắc nhở id 1756190573": 1.0,
+      "may": 1.0,
+      "roi": 1.0,
+      "xin chào": 1.0,
+      "bạn có thể tự ẩn phần gợi ý thông minh đi không": 1.0,
+      "nhắc nhở lúc 8h mai họp nhóm": 1.0,
+      "tính 23 * 47": 1.0,
+      "đâu là thủ đô của việt nam": 1.0,
+      "Đâu là thủ đô của mỹ": 1.0,
+      "chào cậu": 1.0,
+      "mở vscode": 1.0,
+      "đâu là thủ đô của mỹ": 1.0
+    }
+  },
+  "preferences": {},
+  "command_history": [
+    {
+      "command": "mấy giờ rồi",
+      "timestamp": "2025-08-24T14:38:25.792642",
+      "success": true
+    },
+    {
+      "command": "nhắc tôi họp lúc 14h ngày mai",
+      "timestamp": "2025-08-25T00:38:19.213526",
+      "success": true
+    },
+    {
+      "command": "7 cộng 10 bằng ?",
+      "timestamp": "2025-08-25T00:39:52.421462",
+      "success": true
+    },
+    {
+      "command": "ngày mai có những sự kiện nào ?",
+      "timestamp": "2025-08-25T00:40:37.271001",
+      "success": true
+    },
+    {
+      "command": "xóa lời nhắc cuộc họp giúp tôi",
+      "timestamp": "2025-08-25T00:45:32.568558",
+      "success": true
+    },
+    {
+      "command": "đặt báo thức 6h sáng mai",
+      "timestamp": "2025-08-25T00:47:12.268349",
+      "success": false
+    },
+    {
+      "command": "nhắc tôi họp lúc 15h ngày mai",
+      "timestamp": "2025-08-25T11:54:39.621301",
+      "success": true
+    },
+    {
+      "command": "xóa cuộc họp lục 15h ngày mai",
+      "timestamp": "2025-08-25T11:55:00.153864",
+      "success": false
+    },
+    {
+      "command": "ngày mai có sự kiện gì",
+      "timestamp": "2025-08-25T11:57:16.145781",
+      "success": true
+    },
+    {
+      "command": "xóa nhắc nhở 15h ngày mai",
+      "timestamp": "2025-08-25T11:59:11.157114",
+      "success": true
+    },
+    {
+      "command": "sự kiện ngày mai",
+      "timestamp": "2025-08-25T13:15:03.137514",
+      "success": true
+    },
+    {
+      "command": "xóa cuộc họp lúc 15h ngày mai",
+      "timestamp": "2025-08-25T13:15:33.402011",
+      "success": false
+    },
+    {
+      "command": "xem ghi chú hôm nay",
+      "timestamp": "2025-08-26T12:42:25.112468",
+      "success": true
+    },
+    {
+      "command": "hôm nay có sự kiện gì không",
+      "timestamp": "2025-08-28T12:27:50.667285",
+      "success": true
+    },
+    {
+      "command": "xem danh sách sự kiện",
+      "timestamp": "2025-08-28T14:45:07.877626",
+      "success": true
+    },
+    {
+      "command": "xóa danh sách sự kiện",
+      "timestamp": "2025-08-28T14:45:27.368100",
+      "success": true
+    },
+    {
+      "command": "xóa nhắc nhở có id 1756097951",
+      "timestamp": "2025-08-28T21:20:57.765632",
+      "success": true
+    },
+    {
+      "command": "xóa toàn bộ nhắc nhở",
+      "timestamp": "2025-08-28T21:21:23.161569",
+      "success": true
+    },
+    {
+      "command": "xóa nhắc nhở id  1756098844",
+      "timestamp": "2025-08-28T21:22:05.294710",
+      "success": true
+    },
+    {
+      "command": "xóa nhắc nhở id 1756190573",
+      "timestamp": "2025-08-28T21:22:49.521128",
+      "success": true
+    },
+    {
+      "command": "mở êord",
+      "timestamp": "2025-08-29T13:12:26.263865",
+      "success": true
+    },
+    {
+      "command": "mở word",
+      "timestamp": "2025-08-29T13:12:35.942425",
+      "success": true
+    },
+    {
+      "command": "xem danh sách thông báo",
+      "timestamp": "2025-08-29T13:13:33.009017",
+      "success": false
+    },
+    {
+      "command": "xem danh sách sự kiện",
+      "timestamp": "2025-08-29T13:13:54.978663",
+      "success": true
+    },
+    {
+      "command": "xóa nhắc nhở id 1756057099",
+      "timestamp": "2025-08-29T13:20:41.315773",
+      "success": true
+    },
+    {
+      "command": "mấy giờ rồi",
+      "timestamp": "2025-08-29T14:24:24.560285",
+      "success": true
+    },
+    {
+      "command": "may gio roi",
+      "timestamp": "2025-08-29T14:24:33.715744",
+      "success": false
+    },
+    {
+      "command": "mở game đi",
+      "timestamp": "2025-08-29T14:25:00.120110",
+      "success": true
+    },
+    {
+      "command": "xin chào",
+      "timestamp": "2025-08-30T23:15:45.059895",
+      "success": true
+    },
+    {
+      "command": "bạn có thể làm được gì nhỉ",
+      "timestamp": "2025-08-30T23:16:09.938494",
+      "success": false
+    },
+    {
+      "command": "bạn có chức năng gì?",
+      "timestamp": "2025-08-30T23:16:25.046867",
+      "success": false
+    },
+    {
+      "command": "mấy giờ rồi",
+      "timestamp": "2025-08-31T17:27:54.831679",
+      "success": true
+    },
+    {
+      "command": "may",
+      "timestamp": "2025-08-31T18:12:36.640326",
+      "success": false
+    },
+    {
+      "command": "roi",
+      "timestamp": "2025-08-31T18:12:36.641559",
+      "success": false
+    },
+    {
+      "command": "bây giờ là mấy giờ rồi",
+      "timestamp": "2025-09-01T17:48:16.484033",
+      "success": true
+    },
+    {
+      "command": "xem thời tiết ngày mai tại hà nội",
+      "timestamp": "2025-09-01T17:48:48.261848",
+      "success": true
+    },
+    {
+      "command": "xem thông tin hệ thống",
+      "timestamp": "2025-09-01T17:49:50.805787",
+      "success": true
+    },
+    {
+      "command": "xin chào",
+      "timestamp": "2025-09-01T17:50:27.361300",
+      "success": true
+    },
+    {
+      "command": "bạn có thể làm được những gì",
+      "timestamp": "2025-09-01T17:50:49.923270",
+      "success": false
+    },
+    {
+      "command": "xin chào",
+      "timestamp": "2025-09-01T17:53:06.064750",
+      "success": true
+    },
+    {
+      "command": "nè",
+      "timestamp": "2025-09-01T17:54:09.320045",
+      "success": false
+    },
+    {
+      "command": "xin chào",
+      "timestamp": "2025-09-01T18:20:14.029931",
+      "success": true
+    },
+    {
+      "command": "bạn có thể tự ẩn phần gợi ý thông minh đi không",
+      "timestamp": "2025-09-01T18:20:38.030471",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-01T18:20:44.744012",
+      "success": true
+    },
+    {
+      "command": "nhắc nhở lúc 8h mai họp nhóm",
+      "timestamp": "2025-09-01T18:20:48.182684",
+      "success": true
+    },
+    {
+      "command": "tính 23 * 47",
+      "timestamp": "2025-09-01T18:21:03.421701",
+      "success": true
+    },
+    {
+      "command": "thời tiết hôm nay",
+      "timestamp": "2025-09-01T18:21:06.496055",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-01T22:11:07.710269",
+      "success": true
+    },
+    {
+      "command": "tính 23 * 47",
+      "timestamp": "2025-09-01T22:11:20.041196",
+      "success": true
+    },
+    {
+      "command": "mở trình  duyệt",
+      "timestamp": "2025-09-01T22:14:33.496110",
+      "success": true
+    },
+    {
+      "command": "mở máy tính",
+      "timestamp": "2025-09-01T22:15:02.708462",
+      "success": true
+    },
+    {
+      "command": "đóng máytính",
+      "timestamp": "2025-09-01T22:15:16.460305",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-01T22:15:32.100356",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-01T22:15:32.167040",
+      "success": true
+    },
+    {
+      "command": "nè",
+      "timestamp": "2025-09-01T22:16:46.261052",
+      "success": false
+    },
+    {
+      "command": "tôi đang gọi bạn đó",
+      "timestamp": "2025-09-01T22:17:01.757036",
+      "success": false
+    },
+    {
+      "command": "Thông tin hệ thống",
+      "timestamp": "2025-09-01T22:39:15.228192",
+      "success": true
+    },
+    {
+      "command": "tính 23 * 47",
+      "timestamp": "2025-09-01T22:47:33.366030",
+      "success": true
+    },
+    {
+      "command": "nhắc nhở lúc 8h mai họp nhóm",
+      "timestamp": "2025-09-01T22:47:35.605237",
+      "success": true
+    },
+    {
+      "command": "thời tiết hôm nay",
+      "timestamp": "2025-09-01T22:47:37.521507",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-01T22:49:23.107900",
+      "success": true
+    },
+    {
+      "command": "thời tiết hôm nay",
+      "timestamp": "2025-09-01T22:49:27.375921",
+      "success": true
+    },
+    {
+      "command": "tính 23 * 47",
+      "timestamp": "2025-09-01T22:49:32.015427",
+      "success": true
+    },
+    {
+      "command": "nhắc nhở lúc 8h mai họp nhóm",
+      "timestamp": "2025-09-01T22:49:34.227633",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-01T23:06:48.771250",
+      "success": true
+    },
+    {
+      "command": "Mấy giờ rồi",
+      "timestamp": "2025-09-01T23:07:30.381880",
+      "success": true
+    },
+    {
+      "command": "xin chào",
+      "timestamp": "2025-09-01T23:08:29.693355",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-01T23:16:44.884511",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-01T23:18:16.860722",
+      "success": true
+    },
+    {
+      "command": "tính 23 * 47",
+      "timestamp": "2025-09-01T23:18:21.429384",
+      "success": true
+    },
+    {
+      "command": "thời tiết hôm nay",
+      "timestamp": "2025-09-01T23:18:24.737551",
+      "success": true
+    },
+    {
+      "command": "nhắc nhở lúc 8h mai họp nhóm",
+      "timestamp": "2025-09-01T23:18:29.153547",
+      "success": true
+    },
+    {
+      "command": "hỏi chatgpt",
+      "timestamp": "2025-09-02T13:41:16.123003",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T14:00:22.387745",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T14:00:25.282334",
+      "success": true
+    },
+    {
+      "command": "tính 23 * 47",
+      "timestamp": "2025-09-02T14:00:35.911553",
+      "success": true
+    },
+    {
+      "command": "thời tiết hôm nay",
+      "timestamp": "2025-09-02T14:00:37.233105",
+      "success": true
+    },
+    {
+      "command": "nhắc nhở lúc 8h mai họp nhóm",
+      "timestamp": "2025-09-02T14:00:39.160599",
+      "success": true
+    },
+    {
+      "command": "nhắc nhở lúc 8h mai họp nhóm",
+      "timestamp": "2025-09-02T14:00:39.214500",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T21:51:35.263940",
+      "success": true
+    },
+    {
+      "command": "thời tiết hôm nay",
+      "timestamp": "2025-09-02T21:51:43.222311",
+      "success": true
+    },
+    {
+      "command": "đâu là thủ đô của việt nam",
+      "timestamp": "2025-09-02T21:52:18.951519",
+      "success": false
+    },
+    {
+      "command": "Đâu là thủ đô của mỹ",
+      "timestamp": "2025-09-02T21:53:13.430960",
+      "success": false
+    },
+    {
+      "command": "chào cậu",
+      "timestamp": "2025-09-02T21:53:42.330629",
+      "success": true
+    },
+    {
+      "command": "mở vscode",
+      "timestamp": "2025-09-02T21:54:20.904882",
+      "success": true
+    },
+    {
+      "command": "đâu là thủ đô của mỹ",
+      "timestamp": "2025-09-02T21:55:38.065297",
+      "success": false
+    },
+    {
+      "command": "bạn có thể viết code không",
+      "timestamp": "2025-09-02T22:00:34.752984",
+      "success": false
+    },
+    {
+      "command": "tính 23 * 47",
+      "timestamp": "2025-09-02T22:11:43.728039",
+      "success": true
+    },
+    {
+      "command": "thời tiết hôm nay",
+      "timestamp": "2025-09-02T22:11:45.124543",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T22:11:47.177709",
+      "success": true
+    },
+    {
+      "command": "trong lập trình i += 2 có nghĩa là gì ?",
+      "timestamp": "2025-09-02T22:43:56.339378",
+      "success": true
+    },
+    {
+      "command": "I += 2 có nghĩa là gì trong lập trình",
+      "timestamp": "2025-09-02T22:44:49.483011",
+      "success": true
+    },
+    {
+      "command": "hỏi gemini",
+      "timestamp": "2025-09-02T22:45:09.328939",
+      "success": true
+    },
+    {
+      "command": "I +=2 có nghĩa là gì trong lập trình ?",
+      "timestamp": "2025-09-02T22:45:32.950212",
+      "success": true
+    },
+    {
+      "command": "Hỏi gemini I + = 2 có ý nghĩa gì trong lập trình ?",
+      "timestamp": "2025-09-02T22:46:12.348970",
+      "success": true
+    },
+    {
+      "command": "hỏi gemini trong lập trình i+=2 có nghĩa gì",
+      "timestamp": "2025-09-02T22:54:06.278905",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:12:31.163725",
+      "success": false
+    },
+    {
+      "command": "thời tiết hôm nay",
+      "timestamp": "2025-09-02T23:12:32.278901",
+      "success": false
+    },
+    {
+      "command": "tính 23 * 47",
+      "timestamp": "2025-09-02T23:12:33.426488",
+      "success": false
+    },
+    {
+      "command": "tính 23 * 47",
+      "timestamp": "2025-09-02T23:12:33.532030",
+      "success": false
+    },
+    {
+      "command": "nhắc nhở lúc 8h mai họp nhóm",
+      "timestamp": "2025-09-02T23:12:34.235719",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:13:00.008278",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:13:00.017546",
+      "success": false
+    },
+    {
+      "command": "thời tiết hôm nay",
+      "timestamp": "2025-09-02T23:13:02.708568",
+      "success": true
+    },
+    {
+      "command": "thời tiết hôm nay",
+      "timestamp": "2025-09-02T23:13:02.709071",
+      "success": false
+    },
+    {
+      "command": "tính 23 * 47",
+      "timestamp": "2025-09-02T23:13:04.910640",
+      "success": true
+    },
+    {
+      "command": "tính 23 * 47",
+      "timestamp": "2025-09-02T23:13:04.910640",
+      "success": false
+    },
+    {
+      "command": "nhắc nhở lúc 8h mai họp nhóm",
+      "timestamp": "2025-09-02T23:13:05.459421",
+      "success": true
+    },
+    {
+      "command": "nhắc nhở lúc 8h mai họp nhóm",
+      "timestamp": "2025-09-02T23:13:05.460535",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:13:38.991056",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:13:38.992381",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:21:00.261195",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:21:00.262384",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:21:23.073982",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:21:23.073982",
+      "success": false
+    },
+    {
+      "command": "tính 23 * 47",
+      "timestamp": "2025-09-02T23:29:18.925270",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:32:55.690381",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:32:55.690381",
+      "success": false
+    },
+    {
+      "command": "nhắc nhở lúc 8h mai họp nhóm",
+      "timestamp": "2025-09-02T23:33:08.690275",
+      "success": true
+    },
+    {
+      "command": "nhắc nhở lúc 8h mai họp nhóm",
+      "timestamp": "2025-09-02T23:33:08.691557",
+      "success": false
+    },
+    {
+      "command": "mấy giờ rồi",
+      "timestamp": "2025-09-02T23:34:16.031663",
+      "success": true
+    },
+    {
+      "command": "mấy giờ rồi",
+      "timestamp": "2025-09-02T23:34:16.032682",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:33.558217",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:33.559358",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:35.583072",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:35.584489",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:36.293619",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:36.294851",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:36.463279",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:36.463279",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:36.629690",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:36.630722",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:36.776500",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:36.777500",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:36.929314",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:36.930432",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:37.083607",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:37.084673",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:37.234355",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:37.235846",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:37.387133",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:37.389078",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:37.533633",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:37.534744",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:37.700923",
+      "success": true
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:39:37.702302",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:44:51.536221",
+      "success": false
+    },
+    {
+      "command": "thời tiết hôm nay",
+      "timestamp": "2025-09-02T23:44:54.384161",
+      "success": false
+    },
+    {
+      "command": "tính 23 * 47",
+      "timestamp": "2025-09-02T23:44:55.268110",
+      "success": false
+    },
+    {
+      "command": "nhắc nhở lúc 8h mai họp nhóm",
+      "timestamp": "2025-09-02T23:44:57.452280",
+      "success": false
+    },
+    {
+      "command": "thông tin hệ thống",
+      "timestamp": "2025-09-02T23:45:33.034345",
+      "success": true
+    },
+    {
+      "command": "thời tiết hôm nay",
+      "timestamp": "2025-09-02T23:45:42.289905",
+      "success": true
+    },
+    {
+      "command": "7 + 7 bằng mấy",
+      "timestamp": "2025-09-02T23:46:04.607822",
+      "success": true
+    },
+    {
+      "command": "tính 5*5",
+      "timestamp": "2025-09-02T23:46:22.081109",
+      "success": true
+    },
+    {
+      "command": "trong lập trình i += 2 có ý nghĩa là gì",
+      "timestamp": "2025-09-02T23:47:03.979460",
+      "success": true
+    }
+  ],
+  "success_rate": {
+    "mấy giờ rồi": 0.7,
+    "nhắc tôi họp lúc 14h ngày mai": 1.0,
+    "7 cộng 10 bằng ?": 1.0,
+    "ngày mai có những sự kiện nào ?": 1.0,
+    "xóa lời nhắc cuộc họp giúp tôi": 1.0,
+    "đặt báo thức 6h sáng mai": 0.0,
+    "nhắc tôi họp lúc 15h ngày mai": 1.0,
+    "xóa cuộc họp lục 15h ngày mai": 0.0,
+    "ngày mai có sự kiện gì": 1.0,
+    "xóa nhắc nhở 15h ngày mai": 1.0,
+    "sự kiện ngày mai": 1.0,
+    "xóa cuộc họp lúc 15h ngày mai": 0.0,
+    "xem ghi chú hôm nay": 1.0,
+    "hôm nay có sự kiện gì không": 1.0,
+    "xem danh sách sự kiện": 1.0,
+    "xóa danh sách sự kiện": 1.0,
+    "xóa nhắc nhở có id 1756097951": 1.0,
+    "xóa toàn bộ nhắc nhở": 1.0,
+    "xóa nhắc nhở id  1756098844": 1.0,
+    "xóa nhắc nhở id 1756190573": 1.0,
+    "mở êord": 1.0,
+    "mở word": 1.0,
+    "xem danh sách thông báo": 0.0,
+    "xóa nhắc nhở id 1756057099": 1.0,
+    "may gio roi": 0.0,
+    "mở game đi": 1.0,
+    "xin chào": 1.0,
+    "bạn có thể làm được gì nhỉ": 0.0,
+    "bạn có chức năng gì?": 0.0,
+    "may": 0.0,
+    "roi": 0.0,
+    "bây giờ là mấy giờ rồi": 1.0,
+    "xem thời tiết ngày mai tại hà nội": 1.0,
+    "xem thông tin hệ thống": 1.0,
+    "bạn có thể làm được những gì": 0.0,
+    "nè": 0.0,
+    "bạn có thể tự ẩn phần gợi ý thông minh đi không": 0.0,
+    "thông tin hệ thống": 0.5017652792006003,
+    "nhắc nhở lúc 8h mai họp nhóm": 0.3366789999999999,
+    "tính 23 * 47": 0.2205489999999999,
+    "thời tiết hôm nay": 0.57097,
+    "mở trình  duyệt": 1.0,
+    "mở máy tính": 1.0,
+    "đóng máytính": 1.0,
+    "tôi đang gọi bạn đó": 0.0,
+    "Thông tin hệ thống": 1.0,
+    "Mấy giờ rồi": 1.0,
+    "hỏi chatgpt": 1.0,
+    "đâu là thủ đô của việt nam": 0.0,
+    "Đâu là thủ đô của mỹ": 0.0,
+    "chào cậu": 1.0,
+    "mở vscode": 1.0,
+    "đâu là thủ đô của mỹ": 0.0,
+    "bạn có thể viết code không": 0.0,
+    "trong lập trình i += 2 có nghĩa là gì ?": 1.0,
+    "I += 2 có nghĩa là gì trong lập trình": 1.0,
+    "hỏi gemini": 1.0,
+    "I +=2 có nghĩa là gì trong lập trình ?": 1.0,
+    "Hỏi gemini I + = 2 có ý nghĩa gì trong lập trình ?": 1.0,
+    "hỏi gemini trong lập trình i+=2 có nghĩa gì": 1.0,
+    "7 + 7 bằng mấy": 1.0,
+    "tính 5*5": 1.0,
+    "trong lập trình i += 2 có ý nghĩa là gì": 1.0
+  },
+  "weekday_patterns": {
+    "5": {
+      "xin chào": 1.0,
+      "bạn có thể làm được gì nhỉ": 1.0,
+      "bạn có chức năng gì?": 1.0
+    },
+    "6": {
+      "mấy giờ rồi": 1.0,
+      "may": 1.0,
+      "roi": 1.0
+    },
+    "0": {
+      "thông tin hệ thống": 8.0,
+      "tính 23 * 47": 5.0,
+      "xin chào": 4.0,
+      "nhắc nhở lúc 8h mai họp nhóm": 4.0,
+      "thời tiết hôm nay": 4.0,
+      "nè": 2.0,
+      "bây giờ là mấy giờ rồi": 1.0,
+      "xem thời tiết ngày mai tại hà nội": 1.0,
+      "xem thông tin hệ thống": 1.0,
+      "bạn có thể làm được những gì": 1.0,
+      "bạn có thể tự ẩn phần gợi ý thông minh đi không": 1.0,
+      "mở trình  duyệt": 1.0,
+      "mở máy tính": 1.0,
+      "đóng máytính": 1.0,
+      "tôi đang gọi bạn đó": 1.0,
+      "Thông tin hệ thống": 1.0,
+      "Mấy giờ rồi": 1.0
+    },
+    "1": {
+      "thông tin hệ thống": 41.0,
+      "tính 23 * 47": 8.0,
+      "nhắc nhở lúc 8h mai họp nhóm": 8.0,
+      "thời tiết hôm nay": 8.0,
+      "mấy giờ rồi": 2.0,
+      "hỏi chatgpt": 1.0,
+      "đâu là thủ đô của việt nam": 1.0,
+      "Đâu là thủ đô của mỹ": 1.0,
+      "chào cậu": 1.0,
+      "mở vscode": 1.0,
+      "đâu là thủ đô của mỹ": 1.0,
+      "bạn có thể viết code không": 1.0,
+      "trong lập trình i += 2 có nghĩa là gì ?": 1.0,
+      "I += 2 có nghĩa là gì trong lập trình": 1.0,
+      "hỏi gemini": 1.0,
+      "I +=2 có nghĩa là gì trong lập trình ?": 1.0,
+      "Hỏi gemini I + = 2 có ý nghĩa gì trong lập trình ?": 1.0,
+      "hỏi gemini trong lập trình i+=2 có nghĩa gì": 1.0,
+      "7 + 7 bằng mấy": 1.0,
+      "tính 5*5": 1.0,
+      "trong lập trình i += 2 có ý nghĩa là gì": 1.0
+    }
+  },
+  "version": 3
+}
