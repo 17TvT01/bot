@@ -97,6 +97,7 @@ class AIAssistant:
         d.setdefault('command_history', [])
         d.setdefault('success_rate', {})
         d.setdefault('version', 2)
+        d.setdefault('conversations', [])
         # Normalize nested structures to plain dicts
         try:
             d['usage_patterns'] = dict(d.get('usage_patterns', {}))
@@ -122,6 +123,13 @@ class AIAssistant:
                 data_to_save['weekday_patterns'] = {k: dict(v) for k, v in self.user_data.get('weekday_patterns', {}).items()} if 'weekday_patterns' in self.user_data else {}
                 data_to_save['success_rate'] = dict(self.user_data.get('success_rate', {}))
                 data_to_save['version'] = 2
+                # Include conversations if present
+                try:
+                    conv = self.user_data.get('conversations', [])
+                    if isinstance(conv, list):
+                        data_to_save['conversations'] = conv[-100:]
+                except Exception:
+                    pass
             # Atomic write via temp file
             dir_name = os.path.dirname(self.data_file) or "."
             base = os.path.basename(self.data_file)
@@ -169,6 +177,12 @@ class AIAssistant:
                 data_to_save['weekday_patterns'] = {k: dict(v) for k, v in self.user_data.get('weekday_patterns', {}).items()} if 'weekday_patterns' in self.user_data else {}
                 data_to_save['success_rate'] = dict(self.user_data.get('success_rate', {}))
                 data_to_save['version'] = 3
+                try:
+                    conv = self.user_data.get('conversations', [])
+                    if isinstance(conv, list):
+                        data_to_save['conversations'] = conv[-100:]
+                except Exception:
+                    pass
             # Ensure directory exists
             try:
                 snap_dir = os.path.dirname(self.snapshot_file)

@@ -1,0 +1,16 @@
+                preferred = None
+            used = False
+            if preferred == "chatgpt":
+                try:
+                    from features.chatgpt_bridge import ask_chatgpt, is_configured as is_cg  # type: ignore
+                        if is_cg():
+                            print("DEBUG: No feature found. Falling back to ChatGPT (preferred).")
+                            try:
+                                from features.memory import get_memory  # type: ignore
+                                hist = get_memory().get_provider_history(8)
+                            except Exception:
+                                hist = None
+                            result = ask_chatgpt(command, history=hist)
+                        used = True
+                except Exception:
+                    pass

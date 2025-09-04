@@ -344,6 +344,16 @@ def find_best_feature(command: str, tokens: List[str]) -> Tuple[Optional[Callabl
     with feature_loading_lock:
         current_features = features.copy()
 
+    # Fast-path cache for repeated lookups to reduce matching latency
+    try:
+        cache_key = ("/".join(tokens) or _normalize_for_match(command)) + f"|{len(current_features)}"
+        with _feature_match_cache_lock:
+            cached = _feature_match_cache.get(cache_key)
+        if cached:
+            return cached
+    except Exception:
+        pass
+
     # Normalized text for robust matching (accent-insensitive, whitespace-collapsed)
     norm_cmd = _normalize_for_match(command)
 
@@ -426,6 +436,17 @@ def find_best_feature(command: str, tokens: List[str]) -> Tuple[Optional[Callabl
         return (current_features["app_launcher"][0], 1.0, command)
 
     # Tier 2: Feature-specific matching
+    # Reminder feature (events/notes) — prioritize before generic 'thong tin'
+    if "reminder" in current_features:
+        reminder_words = ["nh��_c", "nh��_c nh��Y", "l��<ch", "s��� ki���n", "h��1n", "reminder", "calendar", "ghi chA�", "ghi chu", "su kien"]
+        if any(w in tokens for w in reminder_words):
+            return (current_features["reminder"][0], 1.0, command)
+        try:
+            norm_cmd2 = _normalize_for_match(command)
+            if any(p in norm_cmd2 for p in ["su kien", "ghi chu", "lich", "nhac nho", "calendar", "event"]):
+                return (current_features["reminder"][0], 1.0, command)
+        except Exception:
+            pass
     # System info feature
     if "system_info" in current_features and any(word in tokens for word in ["hệ thống", "thông tin", "máy tính", "system"]):
         return (current_features["system_info"][0], 1.0, "")
@@ -476,7 +497,13 @@ def find_best_feature(command: str, tokens: List[str]) -> Tuple[Optional[Callabl
             best_feature = func
 
     if best_feature:
-        return (best_feature, best_score, command)
+        _ret = (best_feature, best_score, command)
+        try:
+            with _feature_match_cache_lock:
+                _feature_match_cache[cache_key] = _ret
+        except Exception:
+            pass
+        return _ret
 
     return (None, 0, "")
 
@@ -489,6 +516,13 @@ def run_feature_async(command: str, callback: Callable[[str], None]):
         try:
             print(f"DEBUG: Processing command: '{command}'")
             tokens = preprocess_text(command)
+
+            # Record user turn into conversation memory
+            try:
+                from features.memory import get_memory  # type: ignore
+                get_memory().add_turn('user', command)
+            except Exception:
+                pass
 
             # --- Simple teach-and-reply feature ---
             try:
@@ -539,6 +573,25 @@ def run_feature_async(command: str, callback: Callable[[str], None]):
             
             if feature:
                 print(f"DEBUG: Found feature: {getattr(feature, '__name__', 'unknown')} with confidence {confidence}")
+                # If NLP feature selected, inject external context into NLP processor
+                try:
+                    with feature_loading_lock:
+                        _map = features.copy()
+                    chosen_name = None
+                    for _name, (_func, _, _) in _map.items():
+                        if _func is feature:
+                            chosen_name = _name
+                            break
+                    if chosen_name == 'nlp_processor':
+                        try:
+                            from features.memory import get_memory  # type: ignore
+                            from features.nlp_processor import set_nlp_context_window  # type: ignore
+                            hist = get_memory().get_provider_history(8)
+                            set_nlp_context_window(hist)
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
                 result = feature(params)
                 # Ensure result is a string for downstream processing and logging
                 if not isinstance(result, str):
@@ -572,6 +625,17 @@ def run_feature_async(command: str, callback: Callable[[str], None]):
                             return False
                         except Exception:
                             return False
+                    # Inject panel markers for GUI if applicable
+                    try:
+                        if selected_name == 'system_info':
+                            result = f"[[PANEL:SYSTEM_INFO]]{result}"
+                        elif getattr(feature, '__name__', '') == 'get_time':
+                            result = f"[[PANEL:CLOCK]]{result}"
+                        elif selected_name == 'reminder':
+                            result = f"[[PANEL:NOTES]]{result}"
+                    except Exception:
+                        pass
+
                     if selected_name == 'nlp_processor' and _should_escalate(command, result):
                         # Ask via preferred provider
                         def _provider_answer(cmd: str) -> Optional[str]:
@@ -652,7 +716,12 @@ def run_feature_async(command: str, callback: Callable[[str], None]):
                     from features.chatgpt_bridge import ask_chatgpt, is_configured as is_cg  # type: ignore
                     if is_cg():
                         print("DEBUG: No feature found. Falling back to ChatGPT (preferred).")
-                        result = ask_chatgpt(command)
+                        try:
+                            from features.memory import get_memory  # type: ignore
+                            hist = get_memory().get_provider_history(8)
+                        except Exception:
+                            hist = None
+                        result = ask_chatgpt(command, history=hist)
                         used = True
                 except Exception:
                     pass
@@ -660,20 +729,35 @@ def run_feature_async(command: str, callback: Callable[[str], None]):
                 try:
                     if is_gemini_configured():
                         print("DEBUG: No feature found. Falling back to Gemini (preferred).")
-                        result = ask_gemini(command)
+                        try:
+                            from features.memory import get_memory  # type: ignore
+                            hist = get_memory().get_provider_history(8)
+                        except Exception:
+                            hist = None
+                        result = ask_gemini(command, history=hist)
                         used = True
                 except Exception:
                     pass
             if not used:
                 if is_gemini_configured():
                     print("DEBUG: No feature found. Falling back to Gemini.")
-                    result = ask_gemini(command)
+                    try:
+                        from features.memory import get_memory  # type: ignore
+                        hist = get_memory().get_provider_history(8)
+                    except Exception:
+                        hist = None
+                    result = ask_gemini(command, history=hist)
                 else:
                     try:
                         from features.chatgpt_bridge import ask_chatgpt, is_configured as is_cg  # type: ignore
                         if is_cg():
                             print("DEBUG: No feature found. Falling back to ChatGPT.")
-                            result = ask_chatgpt(command)
+                            try:
+                                from features.memory import get_memory  # type: ignore
+                                hist = get_memory().get_provider_history(8)
+                            except Exception:
+                                hist = None
+                            result = ask_chatgpt(command, history=hist)
                             used = True
                     except Exception:
                         pass
@@ -713,6 +797,12 @@ def run_feature_async(command: str, callback: Callable[[str], None]):
                 except Exception:
                     pass
                 _debug(f"DEBUG: Calling callback with result: {safe[:50]}..." if len(safe) > 50 else f"DEBUG: Calling callback with result: {safe}")
+            except Exception:
+                pass
+            # Record assistant turn into conversation memory
+            try:
+                from features.memory import get_memory  # type: ignore
+                get_memory().add_turn('assistant', result if isinstance(result, str) else str(result))
             except Exception:
                 pass
             callback(result)

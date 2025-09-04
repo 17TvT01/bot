@@ -11,6 +11,11 @@ import unicodedata
 import re
 import assistant
 from features.ai_enhancements import get_ai_assistant
+# Optional modern theming with ttkbootstrap
+try:
+    import ttkbootstrap as tb  # type: ignore
+except Exception:
+    tb = None
 try:
     from features import gemini_bridge
 except Exception:
@@ -27,6 +32,28 @@ try:
     from features import voice as voice_mod
 except Exception:
     voice_mod = None
+
+# Optional system dashboard
+try:
+    from features.dashboard import open_dashboard as open_system_dashboard
+except Exception:
+    open_system_dashboard = None
+
+# Optional panels for system/time/notes
+try:
+    from features.panels import open_system_info_panel, open_clock_panel, open_notes_panel
+except Exception:
+    open_system_info_panel = None
+    open_clock_panel = None
+    open_notes_panel = None
+try:
+    from features import notifications as notif
+except Exception:
+    notif = None
+try:
+    from features.reminder_utils import snooze_by_id as snooze_reminder_by_id
+except Exception:
+    snooze_reminder_by_id = None
 
 # Lazy import for reminder feature
 _reminder_manager = None
@@ -323,12 +350,25 @@ class AssistantGUI:
         self._assistant_message("Chào bạn! Đang khởi động...")
         self.root.update_idletasks()
         self.root.after(10, self._start_loading_features)
+        try:
+            if notif is not None:
+                notif.register(self._on_notification)
+        except Exception:
+            pass
 
     # ========== Theme and styling ==========
     def _init_style(self):
-        self.style = ttk.Style()
-        base = 'clam' if 'clam' in self.style.theme_names() else self.style.theme_use()
-        self.style.theme_use(base)
+        # Prefer ttkbootstrap themes if available
+        if 'tb' in globals() and tb is not None:
+            theme = 'cyborg' if self.dark_mode.get() else 'cosmo'
+            try:
+                self.style = tb.Style(theme=theme)
+            except Exception:
+                self.style = ttk.Style()
+        else:
+            self.style = ttk.Style()
+            base = 'clam' if 'clam' in self.style.theme_names() else self.style.theme_use()
+            self.style.theme_use(base)
 
         self.palette_light = {
             'bg': '#F7F7FA',
@@ -373,6 +413,13 @@ class AssistantGUI:
         )
 
     def _on_toggle_theme(self):
+        # If ttkbootstrap present, swap theme directly
+        if 'tb' in globals() and tb is not None:
+            try:
+                new_theme = 'cyborg' if self.dark_mode.get() else 'cosmo'
+                self.style.theme_use(new_theme)
+            except Exception:
+                pass
         self._apply_theme()
         pal = self.palette_dark if self.dark_mode.get() else self.palette_light
         if hasattr(self, 'chat'):
@@ -405,6 +452,14 @@ class AssistantGUI:
             pass
 
         self.root.config(menu=menubar)
+        # Add Tools menu (post-attach)
+        try:
+            menu_tools = tk.Menu(menubar, tearoff=0)
+            if open_system_dashboard:
+                menu_tools.add_command(label='System Dashboard...', command=lambda: open_system_dashboard(self.root))
+            menubar.add_cascade(label='Tools', menu=menu_tools)
+        except Exception:
+            pass
         # Normalize Vietnamese UI texts post-creation
         try:
             # Window title
@@ -971,7 +1026,29 @@ class AssistantGUI:
             except Exception:
                 pass
             self._remove_pending_line()
-            self._assistant_message(response)
+            # Check for panel markers
+            panel = None
+            text = response or ""
+            if isinstance(text, str) and text.startswith('[[PANEL:'):
+                try:
+                    end = text.find(']]')
+                    tag = text[8:end]
+                    panel = tag.strip().upper()
+                    text = text[end+2:]
+                except Exception:
+                    panel = None
+            self._assistant_message(text)
+
+            # Open panels after message shown
+            try:
+                if panel == 'SYSTEM_INFO' and open_system_info_panel:
+                    open_system_info_panel(self.root, text)
+                elif panel == 'CLOCK' and open_clock_panel:
+                    open_clock_panel(self.root)
+                elif panel == 'NOTES' and open_notes_panel:
+                    open_notes_panel(self.root)
+            except Exception:
+                pass
 
             self.input_entry.config(state=tk.NORMAL)
             self.send_button.config(state=tk.NORMAL)
@@ -1034,6 +1111,11 @@ class AssistantGUI:
         except Exception:
             self._last_assistant_text = None
         self._add_text(repair_vi(msg), role='assistant')
+        # Try adding reminder controls if applicable
+        try:
+            self._maybe_attach_reminder_controls(text)
+        except Exception:
+            pass
         # Auto TTS if enabled
         try:
             if voice_mod and voice_mod.get_tts_enabled():
@@ -1049,6 +1131,112 @@ class AssistantGUI:
                 self.input_entry.insert(0, repair_vi(command_text))
                 self.process_input()
         ttk.Button(parent, text=repair_vi(label), command=run).pack(fill=tk.X, pady=4)
+
+    def _maybe_attach_reminder_controls(self, text: str):
+        'Attach Add/Delete reminder buttons under a reminders list message.'
+        try:
+            if not isinstance(text, str):
+                return
+            if '[ID:' not in text:
+                return
+            ids = []
+            for ln in text.splitlines():
+                if '[ID:' in ln:
+                    parts = ln.split('[ID:')
+                    for part in parts[1:]:
+                        rid = part.split(']')[0].strip()
+                        if rid:
+                            ids.append(rid)
+            if not ids:
+                return
+            controls = ttk.Frame(self.chat.inner)
+            controls.pack(fill=tk.X, padx=8, pady=(2, 8), anchor='w')
+            ttk.Label(controls, text=repair_vi('Nhắc nhở:'), style='Muted.TLabel').pack(side=tk.LEFT, padx=(0,6))
+            ttk.Button(controls, text=repair_vi('Thêm nhắc nhở...'), command=self._open_add_reminder_dialog).pack(side=tk.LEFT, padx=4)
+            for rid in ids[:8]:
+                rid_clean = str(rid).strip()
+                def _mk(rid_local=rid_clean):
+                    return lambda: self._send_command(f'xóa nhắc nhở id:{rid_local}')
+                ttk.Button(controls, text=repair_vi(f'Xóa ID {rid_clean}'), command=_mk()).pack(side=tk.LEFT, padx=4)
+            try:
+                self.chat.after(10, lambda: self.chat.canvas.yview_moveto(1.0))
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+    def _open_add_reminder_dialog(self):
+        'Open a dialog to add a reminder (title/time/optional description).'
+        win = tk.Toplevel(self.root)
+        try:
+            win.title(repair_vi('Thêm nhắc nhở'))
+        except Exception:
+            pass
+        win.transient(self.root)
+        try:
+            win.grab_set()
+        except Exception:
+            pass
+        frm = ttk.Frame(win, padding=12)
+        frm.pack(fill=tk.BOTH, expand=True)
+        ttk.Label(frm, text=repair_vi('Tiêu đề')).pack(anchor='w')
+        title_e = ttk.Entry(frm, width=48)
+        title_e.pack(fill=tk.X, pady=(0,8))
+        ttk.Label(frm, text=repair_vi('Thời gian (vd: 14h ngày mai)')).pack(anchor='w')
+        time_e = ttk.Entry(frm, width=32)
+        time_e.pack(fill=tk.X, pady=(0,8))
+        ttk.Label(frm, text=repair_vi('Mô tả (tùy chọn)')).pack(anchor='w')
+        desc_e = ttk.Entry(frm, width=64)
+        desc_e.pack(fill=tk.X, pady=(0,12))
+        btns = ttk.Frame(frm)
+        btns.pack(fill=tk.X)
+
+        def _submit():
+            title = title_e.get().strip()
+            time_str = time_e.get().strip()
+            desc = desc_e.get().strip()
+            if not title or not time_str:
+                try:
+                    messagebox.showerror(repair_vi('Thiếu thông tin'), repair_vi('Cần nhập Tiêu đề và Thời gian.'))
+                except Exception:
+                    pass
+                return
+            cmd = f'nhắc tôi {title}'
+            if desc:
+                cmd += f', {desc}'
+            cmd += f' vào {time_str}'
+            self._send_command(cmd)
+            try:
+                win.destroy()
+            except Exception:
+                pass
+
+        ttk.Button(btns, text=repair_vi('Thêm'), command=_submit).pack(side=tk.RIGHT, padx=4)
+        ttk.Button(btns, text=repair_vi('Huỷ'), command=lambda: win.destroy()).pack(side=tk.RIGHT)
+        try:
+            title_e.focus_set()
+        except Exception:
+            pass
+
+        # Position near center
+        try:
+            win.update_idletasks()
+            w = win.winfo_width(); h = win.winfo_height()
+            sw = self.root.winfo_screenwidth(); sh = self.root.winfo_screenheight()
+            win.geometry(f'+{int((sw-w)/2)}+{int((sh-h)/3)}')
+        except Exception:
+            pass
+
+    def _send_command(self, cmd: str):
+        'Push a command into the input and process it.'
+        try:
+            if self.input_entry.cget('state') == 'disabled':
+                return
+            self.input_entry.delete(0, tk.END)
+            self.input_entry.insert(0, repair_vi(cmd))
+            self.process_input()
+        except Exception:
+            pass
 
     def voice_input_action(self):
         """Record from microphone and insert recognized text into input."""
@@ -1120,6 +1308,72 @@ class AssistantGUI:
             threading.Thread(target=_work_say, daemon=True).start()
         except Exception:
             _work_say()
+    def _on_notification(self, event: dict):
+        try:
+            if not isinstance(event, dict):
+                return
+            if event.get('type') == 'reminder':
+                title = str(event.get('title') or 'Nhắc nhở')
+                desc = str(event.get('description') or '')
+                rid = str(event.get('id') or '')
+                when = str(event.get('time') or '')
+                self._show_toast(title, desc, rid, when)
+                try:
+                    if voice_mod and voice_mod.get_tts_enabled():
+                        voice_mod.speak_text(f"Nhắc nhở: {title}")
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    def _show_toast(self, title: str, desc: str, rid: str, when: str):
+        try:
+            tw = tk.Toplevel(self.root)
+            tw.title(repair_vi('Thông báo'))
+            try:
+                tw.attributes('-topmost', True)
+            except Exception:
+                pass
+            frm = ttk.Frame(tw, padding=10)
+            frm.pack(fill=tk.BOTH, expand=True)
+            ttk.Label(frm, text=repair_vi(title)).pack(anchor='w')
+            if desc:
+                ttk.Label(frm, text=repair_vi(desc), style='Muted.TLabel').pack(anchor='w')
+            if when:
+                ttk.Label(frm, text=repair_vi(f'Thời gian: {when}'), style='Muted.TLabel').pack(anchor='w', pady=(0,6))
+            btns = ttk.Frame(frm)
+            btns.pack(fill=tk.X, pady=(6,0))
+            ttk.Button(btns, text=repair_vi('Đọc'), command=lambda: self._toast_say(title, desc)).pack(side=tk.LEFT)
+            ttk.Button(btns, text=repair_vi('Mở panel'), command=lambda: (open_notes_panel and open_notes_panel(self.root), tw.destroy())).pack(side=tk.LEFT, padx=6)
+            if snooze_reminder_by_id and rid:
+                ttk.Button(btns, text=repair_vi('Hoãn 10’'), command=lambda: self._toast_snooze(rid, tw)).pack(side=tk.LEFT)
+            ttk.Button(btns, text=repair_vi('Đóng'), command=tw.destroy).pack(side=tk.RIGHT)
+            try:
+                tw.update_idletasks()
+                sw = self.root.winfo_screenwidth(); sh = self.root.winfo_screenheight()
+                w = tw.winfo_width(); h = tw.winfo_height()
+                x = sw - w - 24; y = sh - h - 64
+                tw.geometry(f"+{x}+{y}")
+            except Exception:
+                pass
+        except Exception:
+            pass
+    def _toast_snooze(self, rid: str, tw):
+        try:
+            if snooze_reminder_by_id and rid:
+                msg = snooze_reminder_by_id(rid, 10)
+                self._assistant_message(msg)
+        except Exception:
+            pass
+        try:
+            tw.destroy()
+        except Exception:
+            pass
+    def _toast_say(self, title: str, desc: str):
+        try:
+            if voice_mod:
+                voice_mod.speak_text(f"{title}. {desc}")
+        except Exception:
+            pass
 
 def start_gui():
     print("Starting GUI initialization...")

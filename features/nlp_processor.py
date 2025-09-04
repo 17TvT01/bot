@@ -857,6 +857,37 @@ class EnhancedNLPProcessor:
                 break
         
         return keywords
+
+    def normalize_text(self, text: str) -> str:
+        """Chuẩn hóa văn bản: co giãn khoảng trắng, chuẩn hóa khoảng cách dấu câu, viết hoa đầu câu.
+
+        Kept simple and dependency-free to avoid slowing down GUI/tests.
+        """
+        try:
+            # Collapse whitespace
+            text = re.sub(r"\s+", " ", text or "").strip()
+            if not text:
+                return ""
+            # Normalize punctuation spacing
+            text = re.sub(r"\s*([,.!?;:])\s*", r"\1 ", text)
+            # Capitalize sentence starts
+            parts = re.split(r"([.!?]\s)", text)
+            normalized = ""
+            for i in range(0, len(parts), 2):
+                if i < len(parts):
+                    sent = parts[i].strip()
+                    if sent:
+                        sent = sent[0].upper() + sent[1:]
+                        normalized += sent
+                    if i + 1 < len(parts):
+                        normalized += parts[i + 1]
+            return normalized.strip()
+        except Exception:
+            # Fallback to a minimal safe normalization
+            try:
+                return (text or "").strip()
+            except Exception:
+                return ""
     
     def _get_main_intent(self, analysis: Dict[str, Any]) -> str:
         """Xác định ý định chính từ analysis results"""
@@ -1265,7 +1296,7 @@ class EnhancedNLPProcessor:
         # Trả về danh sách từ khóa duy nhất
         return list(set(keywords))
     
-    def normalize_text(self, text: str) -> str:
+def normalize_text(self, text: str) -> str:
         """Chuẩn hóa văn bản"""
         # Loại bỏ khoảng trắng thừa
         text = re.sub(r'\s+', ' ', text).strip()
@@ -1291,6 +1322,34 @@ class EnhancedNLPProcessor:
 
 # Singleton instance
 _nlp_processor = None
+
+def set_nlp_context_window(history: List[dict]) -> None:
+    """Inject recent conversation turns into the processor context (best-effort).
+
+    Accepts a list of dicts like {'role': 'user'|'assistant', 'content': '...'}.
+    """
+    try:
+        proc = get_nlp_processor()
+        texts: List[str] = []
+        for item in history[-12:]:
+            if isinstance(item, dict):
+                c = item.get('content')
+            else:
+                c = None
+            if isinstance(c, str) and c.strip():
+                texts.append(c.strip())
+        # Append an external context bundle; keep context size bounded
+        try:
+            cm = getattr(proc, 'context_memory', []) or []
+            if not isinstance(cm, list):
+                cm = []
+            cm = cm[-9:]
+            cm.append({"external_texts": texts[-12:]})
+            proc.context_memory = cm
+        except Exception:
+            pass
+    except Exception:
+        pass
 
 def get_nlp_processor() -> EnhancedNLPProcessor:
     """Trả về instance của EnhancedNLPProcessor (singleton)"""
